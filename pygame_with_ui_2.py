@@ -16,16 +16,46 @@ load_dotenv()
 CONFIG_PATH = Path("app_config.json")
 IMAGE_DIR = Path("image_out")
 FULL_SCREEN: bool = True
+DEFAULT_BG_COLOR = (128, 128, 128)  # Neutral gray
+DEFAULT_DISPLAY_DURATION = "00:00:05"  # 5 seconds
+
+
+def parse_display_duration(duration_str: str) -> int:
+    """Parses a HH:MM:SS string into seconds."""
+    try:
+        parts = [int(p) for p in duration_str.split(":")]
+        while len(parts) < 3:
+            parts.insert(0, 0)  # Fill missing values with zeros
+        return parts[0] * 3600 + parts[1] * 60 + parts[2]
+    except ValueError:
+        return 5  # Default to 5 seconds
+
 
 def load_config() -> Dict[str, Union[str, int, List[int], bool]]:
     """Loads configuration settings from a JSON file."""
     try:
         if CONFIG_PATH.exists():
             with CONFIG_PATH.open("r", encoding="utf-8") as file:
-                return json.load(file)
+                config = json.load(file)
+        else:
+            config = {}
     except (json.JSONDecodeError, IOError) as e:
         print(f"Error loading config: {e}")
-    return {"width": 800, "height": 600, "title": "Pygame Window", "full_screen": False}
+        config = {}
+
+    config.setdefault("width", 800)
+    config.setdefault("height", 600)
+    config.setdefault("title", "Pygame Window")
+    config.setdefault("full_screen", False)
+    config.setdefault("display_duration", DEFAULT_DISPLAY_DURATION)
+    config.setdefault("background_color", DEFAULT_BG_COLOR)
+    config.setdefault("image_directory", "image_out")
+
+    image_dir = Path(config["image_directory"])
+    if not image_dir.exists():
+        image_dir.mkdir(parents=True, exist_ok=True)
+
+    return config
 
 
 def save_config(config: Dict[str, Union[str, int, List[int], bool]]) -> None:
@@ -42,25 +72,34 @@ class PygameApp:
         pygame.init()
         self.config = config
         self.running = True
+        self.screen = None
         self.set_screen()
         self.last_image_time = time.time()
         self.current_image = None
+        self.display_duration = parse_display_duration(self.config["display_duration"])
         self.load_random_image()
 
     def set_screen(self):
         """
         Sets the Pygame display mode based on the config.
+        Note: You can set the mode of the screen surface multiple times,
+        but you might have to do pygame.display.quit() followed by pygame.display.init().
+        See the pygame documentation here
+        http://www.pygame.org/docs/ref/display.html#pygame.display.set_mode
         """
         if "full_screen" not in self.config:
-            self.config["full_screen"] = FULL_SCREEN
-        flags = pygame.FULLSCREEN if self.config["full_screen"] else 0
-        self.screen = pygame.display.set_mode((self.config["width"], self.config["height"]), flags)
+            self.config["full_screen"] = pygame.FULLSCREEN
+        # screen_mode may only be pygame.FULLSCREEN or pygame.RESIZABLE
+        screen_mode = pygame.FULLSCREEN if self.config["full_screen"] else pygame.RESIZABLE
+
+        self.screen = pygame.display.set_mode((self.config["width"], self.config["height"]), screen_mode)
         pygame.display.set_caption(self.config["title"])
 
     def load_random_image(self):
-        """Loads a random image from the image_out directory."""
-        if IMAGE_DIR.exists() and IMAGE_DIR.is_dir():
-            images = list(IMAGE_DIR.glob("*.png")) + list(IMAGE_DIR.glob("*.jpg")) + list(IMAGE_DIR.glob("*.jpeg"))
+        """Loads a random image from the configured image directory."""
+        image_dir = Path(self.config["image_directory"])
+        if image_dir.exists() and image_dir.is_dir():
+            images = list(image_dir.glob("*.png")) + list(image_dir.glob("*.jpg")) + list(image_dir.glob("*.jpeg"))
             if images:
                 image_path = random.choice(images)
                 image = Image.open(image_path)
@@ -80,12 +119,12 @@ class PygameApp:
                     elif event.key == pygame.K_COMMA:
                         self.open_config_dialog()
 
-            # Load a new image every 5 seconds
-            if time.time() - self.last_image_time >= 5:
+            # Load a new image based on the configured duration
+            if time.time() - self.last_image_time >= self.display_duration:
                 self.load_random_image()
                 self.last_image_time = time.time()
 
-            self.screen.fill((0, 0, 0))  # Black background
+            self.screen.fill(tuple(self.config["background_color"]))  # Configurable background color
             if self.current_image:
                 self.screen.blit(self.current_image, (0, 0))
             pygame.display.flip()
