@@ -92,11 +92,23 @@ class PygameApp:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.running = False
-                elif event.type == pygame.KEYDOWN and event.key == pygame.K_q:
-                    pygame.event.post(pygame.event.Event(pygame.QUIT))
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_q:
+                        pygame.event.post(pygame.event.Event(pygame.QUIT))
+                    elif event.key == pygame.K_COMMA:
+                        self.open_config_dialog()
             self.screen.fill((0, 0, 0))  # Black background
             pygame.display.flip()
             time.sleep(0.01)  # Reduce CPU usage
+
+    def open_config_dialog(self):
+        """Opens the configuration dialog."""
+        app = QApplication.instance() or QApplication([])
+        dialog = ConfigDialog(self.config)
+        if dialog.exec():
+            self.config = dialog.config
+            pygame.display.set_mode((self.config["width"], self.config["height"]))
+            pygame.display.set_caption(self.config["title"])
 
     def run(self) -> None:
         """Runs the Pygame loop and ensures proper cleanup."""
@@ -108,9 +120,5 @@ class PygameApp:
 
 if __name__ == "__main__":
     config = load_config()
-    app = QApplication([])
-    dialog = ConfigDialog(config)
-    if dialog.exec():
-        config = dialog.config
     pygame_app = PygameApp(config)
     pygame_app.run()
