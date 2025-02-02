@@ -7,12 +7,15 @@ from io import BytesIO
 from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QPushButton, QLabel
 from PyQt6.QtGui import QPixmap
 from PyQt6.QtCore import Qt
+from datetime import datetime
+from dotenv import load_dotenv
 
 
 class ImageGeneratorWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.client = OpenAI()  # Uses OPENAI_API_KEY environment variable
+        api_key = os.environ["OPEN_AI_SECRET"]
+        self.client = OpenAI(api_key = api_key)
         self.setWindowTitle("AI Image Generator")
         self.setGeometry(100, 100, 1024, 1200)
 
@@ -47,7 +50,7 @@ class ImageGeneratorWindow(QMainWindow):
         updated prompt in your response."""
 
         response = self.client.chat.completions.create(
-            model="gpt-4",
+            model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": "Generate a creative image prompt."}
@@ -81,7 +84,9 @@ class ImageGeneratorWindow(QMainWindow):
             img = self.generate_dalle_image(prompt)
 
             # save the image
-            img.save("output_image.png")
+            # Get current datetime
+            formatted_date = datetime.now().strftime("%Y%m%dT%H%M%S")
+            img.save(f"image_out/{formatted_date} output_image.png")
 
             # Convert PIL Image to QPixmap and display
             buffer = BytesIO()
@@ -98,8 +103,11 @@ class ImageGeneratorWindow(QMainWindow):
 
 
 def main():
+
+    # https://pypi.org/project/python-dotenv/
+    # load_dotenv()  # load .env vars into environment variables
     # Make sure OPENAI_API_KEY environment variable is set
-    if 'OPENAI_API_KEY' not in os.environ:
+    if 'OPEN_AI_SECRET' not in os.environ:
         print("Please set OPENAI_API_KEY environment variable")
         return
 
