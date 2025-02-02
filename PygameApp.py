@@ -3,12 +3,15 @@ import random
 import time
 from pathlib import Path
 from typing import Dict, List, Union
+import os
+from openai import OpenAI
 
 import pygame
 from PIL import Image
 from PyQt6.QtWidgets import (QApplication)
 
 from ConfigDialog import ConfigDialog
+from ImageGenerator import ImageGenerator
 
 CONFIG_PATH = Path("app_config.json")
 IMAGE_DIR = Path("image_out")
@@ -21,6 +24,7 @@ class PygameApp:
     def __init__(self):
         pygame.init()
         self.config: Dict[str, Union[str, int, List[int], bool]] = self.load_config()
+        self.client = OpenAI(api_key = os.environ["OPEN_AI_SECRET"])
         self.running = True
         self.screen = None
         self.set_screen()
@@ -28,6 +32,7 @@ class PygameApp:
         self.current_image = None
         self.display_duration = 5
         self.image_position = None
+        self.image_generator = ImageGenerator()
 
     def load_config(self) -> Dict[str, Union[str, int, List[int], bool]]:
         """Loads configuration settings from a JSON file."""
@@ -83,17 +88,16 @@ class PygameApp:
         self.screen.fill(color=color_value)  # type: ignore
         pygame.display.set_caption(self.config["title"])
 
-    # def load_random_image(self):
-    #     """Loads a random image from the configured image directory."""
-    #     image_dir = Path(self.config["image_directory"])
-    #     if image_dir.exists() and image_dir.is_dir():
-    #         images = list(image_dir.glob("*.png")) + list(image_dir.glob("*.jpg")) + list(image_dir.glob("*.jpeg"))
-    #         if images:
-    #             image_path = random.choice(images)
-    #             image = Image.open(image_path)
-    #             image = image.convert("RGB")
-    #             image = image.resize((self.config["width"], self.config["height"]), Image.LANCZOS)
-    #             self.current_image = pygame.image.fromstring(image.tobytes(), image.size, image.mode)
+    def generate_random_image(self) :
+        w, h = self.screen.get_size()
+        image = self.image_generator.generate_image((w, h), self.config["image_directory"])
+        if image is not None:
+            self.current_image = pygame.image.fromstring(image.tobytes(), image.size, image.mode)
+            self.image_position = (
+                (w - image.size[0]) // 2,
+                (w - image.size[1]) // 2
+            )
+
     def load_random_image(self):
         """Loads a random image from the configured image directory while maintaining its aspect ratio."""
         image_dir = Path(self.config["image_directory"])
@@ -129,7 +133,10 @@ class PygameApp:
             # Load a new image based on the configured duration in seconds
             self.display_duration = self.parse_display_duration(self.config["display_duration"])
             if time.time() - self.last_image_time >= self.display_duration or self.current_image is None:
-                self.load_random_image()
+                if self.current_image is None:
+                    self.load_random_image()
+                else:
+                    self.generate_random_image()
                 self.last_image_time = time.time()
 
                 self.screen.fill(tuple(self.config["background_color"]))  # Configurable background color
