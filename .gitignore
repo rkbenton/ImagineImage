@@ -1,6 +1,9 @@
 # database stuff
 *.db
 
+# program output
+image_out/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
