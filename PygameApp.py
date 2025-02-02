@@ -27,7 +27,6 @@ class PygameApp:
         self.last_image_time = time.time()
         self.current_image = None
         self.display_duration = 5
-        self.load_random_image()
 
     def load_config(self) -> Dict[str, Union[str, int, List[int], bool]]:
         """Loads configuration settings from a JSON file."""
@@ -79,6 +78,8 @@ class PygameApp:
         screen_mode = pygame.FULLSCREEN if self.config["full_screen"] else pygame.RESIZABLE
 
         self.screen = pygame.display.set_mode((self.config["width"], self.config["height"]), screen_mode)
+        color_value = tuple(self.config["background_color"])  # type: ignore
+        self.screen.fill(color=color_value)  # type: ignore
         pygame.display.set_caption(self.config["title"])
 
     def load_random_image(self):
@@ -107,15 +108,15 @@ class PygameApp:
 
             # Load a new image based on the configured duration in seconds
             self.display_duration = self.parse_display_duration(self.config["display_duration"])
-            if time.time() - self.last_image_time >= self.display_duration:
+            if time.time() - self.last_image_time >= self.display_duration or self.current_image is None:
                 self.load_random_image()
                 self.last_image_time = time.time()
 
-            self.screen.fill(tuple(self.config["background_color"]))  # Configurable background color
-            if self.current_image:
-                self.screen.blit(self.current_image, (0, 0))
-            pygame.display.flip()
-            time.sleep(0.7)  # Reduce CPU usage
+                self.screen.fill(tuple(self.config["background_color"]))  # Configurable background color
+                if self.current_image:
+                    self.screen.blit(self.current_image, (0, 0))
+                pygame.display.flip()
+                time.sleep(0.1)  # Reduce CPU usage
 
     def open_config_dialog(self):
         """Opens the configuration dialog."""
