@@ -27,6 +27,7 @@ class PygameApp:
         self.last_image_time = time.time()
         self.current_image = None
         self.display_duration = 5
+        self.image_position = None
 
     def load_config(self) -> Dict[str, Union[str, int, List[int], bool]]:
         """Loads configuration settings from a JSON file."""
@@ -82,8 +83,19 @@ class PygameApp:
         self.screen.fill(color=color_value)  # type: ignore
         pygame.display.set_caption(self.config["title"])
 
+    # def load_random_image(self):
+    #     """Loads a random image from the configured image directory."""
+    #     image_dir = Path(self.config["image_directory"])
+    #     if image_dir.exists() and image_dir.is_dir():
+    #         images = list(image_dir.glob("*.png")) + list(image_dir.glob("*.jpg")) + list(image_dir.glob("*.jpeg"))
+    #         if images:
+    #             image_path = random.choice(images)
+    #             image = Image.open(image_path)
+    #             image = image.convert("RGB")
+    #             image = image.resize((self.config["width"], self.config["height"]), Image.LANCZOS)
+    #             self.current_image = pygame.image.fromstring(image.tobytes(), image.size, image.mode)
     def load_random_image(self):
-        """Loads a random image from the configured image directory."""
+        """Loads a random image from the configured image directory while maintaining its aspect ratio."""
         image_dir = Path(self.config["image_directory"])
         if image_dir.exists() and image_dir.is_dir():
             images = list(image_dir.glob("*.png")) + list(image_dir.glob("*.jpg")) + list(image_dir.glob("*.jpeg"))
@@ -91,9 +103,17 @@ class PygameApp:
                 image_path = random.choice(images)
                 image = Image.open(image_path)
                 image = image.convert("RGB")
-                image = image.resize((self.config["width"], self.config["height"]), Image.LANCZOS)
+                screen_width, screen_height = self.config["width"], self.config["height"]
+
+                # Maintain aspect ratio
+                image.thumbnail((screen_width, screen_height), Image.LANCZOS)
                 self.current_image = pygame.image.fromstring(image.tobytes(), image.size, image.mode)
 
+                # Calculate position to center the image
+                self.image_position = (
+                    (screen_width - image.size[0]) // 2,
+                    (screen_height - image.size[1]) // 2
+                )
     def event_loop(self) -> None:
         """Handles the Pygame event loop."""
         while self.running:
@@ -114,7 +134,7 @@ class PygameApp:
 
                 self.screen.fill(tuple(self.config["background_color"]))  # Configurable background color
                 if self.current_image:
-                    self.screen.blit(self.current_image, (0, 0))
+                    self.screen.blit(self.current_image, self.image_position)
                 pygame.display.flip()
                 time.sleep(0.1)  # Reduce CPU usage
 
