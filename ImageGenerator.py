@@ -47,6 +47,7 @@ class ImageGenerator:
         else:
             img_siz = "1024x1792"
 
+        # https://cookbook.openai.com/examples/dalle/image_generations_edits_and_variations_with_dall-e
         try:
             response = self.client.images.generate(
                 model="dall-e-3",  # Choose between "dall-e-3" or "dall-e-2"

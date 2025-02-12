@@ -3,14 +3,13 @@ import tkinter as tk  # Tkinter for GUI and configuration dialog
 import tkinter.messagebox
 from pathlib import Path
 
-CONFIG_FILE = Path("app_config.json")
 DEFAULT_DISPLAY_DURATION = "00:00:05"  # 5 seconds
 
 
 class ConfigMgr:
 
-    def __init__(self):
-        pass
+    def __init__(self, config_file_path: Path = Path("app_config.json")):
+        self.config_file_path = config_file_path
 
     def validate_time_string(self, time_str: str):
         try:
@@ -35,11 +34,11 @@ class ConfigMgr:
             "background_color": [0, 0, 0]
         }
 
-        if not CONFIG_FILE.exists():
-            with CONFIG_FILE.open("w", encoding="utf-8") as file:
+        if not self.config_file_path.exists():
+            with self.config_file_path.open("w", encoding="utf-8") as file:
                 json.dump(default_config, file, indent=4)  # type: ignore
 
-        with CONFIG_FILE.open("r", encoding="utf-8") as file:
+        with self.config_file_path.open("r", encoding="utf-8") as file:
             # merge to include any values missing from the file
             the_data = json.load(file)
             config = default_config | the_data
@@ -57,9 +56,40 @@ class ConfigMgr:
         """
         Saves the current configuration to the app_config.json file.
         """
-        with CONFIG_FILE.open("w", encoding="utf-8") as file:
+        with self.config_file_path.open("w", encoding="utf-8") as file:
             json.dump(config, file, indent=4)  # type: ignore
 
+    def validate_config_values(self, config_dict):
+        """Validate configuration values"""
+        errors = []
+
+        duration_str: str = config_dict["display_duration"]
+        if not self.validate_time_string(duration_str):
+            errors.append(f"Invalid duration: '{duration_str}'. Use HH:MM:SS format")
+
+        # Validate RGB values
+        if 3 != len(config_dict['background_color']):
+            errors.append(f"there should be 3 values in background_color, found: '{config_dict['background_color']}'")
+        else:
+            for color in config_dict["background_color"]:
+                try:
+                    c = int(color)
+                    if not (0 <= color <= 255):
+                        errors.append(f"Color value {color} must be between 0 and 255")
+                except Exception as e:
+                    errors.append(f"Color value {color} must be a number between 0 and 255. {e}")
+
+        # Validate max files
+        if config_dict["max_num_saved_files"] <= 0:
+            errors.append("Maximum saved files must be greater than 0")
+
+        # Validate save directory
+        save_dir = Path(config_dict["save_directory_path"])
+        if not save_dir.exists() or not save_dir.is_dir():
+            errors.append("Save directory must be a valid directory path")
+
+        if errors:
+            raise ValueError("\n".join(errors))
 
     def show_options_dialog(self, config):
         dialog = tk.Toplevel()
@@ -116,22 +146,24 @@ class ConfigMgr:
 
         def save_changes():
             try:
-                if not self.validate_time_string(duration_var.get()):
-                    raise ValueError("Invalid time format. Use HH:MM:SS")
-
-                config.update({
-                    "display_duration": float(duration_var.get()),
+                new_config = {
+                    "display_duration": duration_var.get(),
                     "full_screen": fullscreen_var.get(),
                     "custom_prompt": prompt_var.get(),
                     "embellish_custom_prompt": embellish_var.get(),
                     "max_num_saved_files": int(max_files_var.get()),
                     "save_directory_path": save_dir_var.get(),
                     "background_color": [int(v.get()) for v in color_vars]
-                })
+                }
 
-                dialog.destroy()
+                self.validate_config_values(new_config)
+                config.update(new_config)
+                print("Config updated successfully.")  # Debugging
             except ValueError as e:
                 tk.messagebox.showerror("Error", f"Invalid input: {str(e)}")
+
+            print("Closing dialog...")  # Debugging
+            dialog.destroy()
 
         button_frame = tk.Frame(dialog)
         button_frame.pack(fill=tk.X, pady=10)

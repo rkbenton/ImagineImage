@@ -39,47 +39,66 @@ class PromptGenerator:
             "Generate an image prompt with a sentimental old car.",
             "Generate an image prompt with a cubist smiling woman.",
             "Generate an image prompt with a cubist avuncular gentleman.",
-            "Generate an image prompt of a romantic couple dancing."
+            "Generate an image prompt of a romantic couple dancing.",
+            "Generate an image prompt of for an infinite grid of tessellated cubes.",
+            "Generate an image prompt featuring an ancient tree with glowing runes.",
+            "Generate a creative image prompt of a futuristic cityscape at dusk.",
+            "Generate an image prompt of a mysterious library with floating books.",
+            "Generate a creative image prompt of a lighthouse standing against a storm.",
+            "Generate an image prompt in the style of surrealist dreamscapes.",
+            "Generate an image prompt featuring a hidden door covered in ivy.",
+            "Generate a creative image prompt of an enchanted mirror reflecting another world.",
+            "Generate an image prompt of a market street in a cyberpunk world.",
+            "Generate an image prompt of a traveler standing before a vast, alien landscape.",
         ]
 
         self.subjects = [
             "lighthouse", "tree", "library", "clock", "mirror", "book",
             "city", "garden", "mountain", "ocean", "bird", "door",
             "mountain scape", "rocky shoreline", "busy city street",
-            "taxicab"
+            "taxicab", "campfire", "bridge", "lantern", "castle", "waterfall",
+            "train station", "cathedral", "harbor", "windmill", "statue", "cave",
+            "country tavern", "thatched roof cottage", "castle", "shipwreck", "observatory",
+            "tower", "fountain", "tunnel", "desert", "island", "forest path", "marketplace",
+            "library", "book"
         ]
 
         self.attributes = [
             "crystal", "mechanical", "floating", "ancient", "luminous",
-            "paper", "giant", "miniature", "ethereal", "forgotten"
+            "paper", "giant", "miniature", "ethereal", "forgotten",
         ]
 
         self.actions = [
             "growing", "transforming", "dissolving", "emerging",
-            "dancing", "floating", "merging", "unfolding", "resting"
+            "dancing", "floating", "merging", "unfolding", "resting",
+            "reflecting"
         ]
 
         self.settings = [
             "in a dream", "under starlight", "between dimensions",
             "in the mist", "during an eclipse", "through time",
-            "in reverse", "across seasons"
+            "in reverse", "across seasons", "by a lake", "in the mountains",
+            "medieval village", "medieval village square"
         ]
 
         self.heroic_animals = [
             "eagle", "bear", "tiger", "lion", "bison", "whale", "husky", "horse",
-            "osprey", "jaguar", "wolf", "moose", "dragon", "cattle dog"
+            "osprey", "jaguar", "wolf", "moose", "dragon", "cattle dog", "unicorn",
+            "badger", "husky", "gryphon"
         ]
 
         self.cute_animals = [
             "puppy", "dog", "kitten", "cat", "otter", "penguin", "squirrel", "panda",
-            "quokka", "capybara", "rabbit", "fox"
+            "quokka", "capybara", "rabbit", "fox", "hedgehog", "giraffe"
         ]
 
         self.artists = [
             "Pablo Picasso", "Alexander Calder", "Leonardo da Vinci", "Michelangelo",
             "Claude Monet", "Rembrandt van Rijn", "Frida Kahlo", "Diego Rivera",
             "Charles Rennie Mackintosh", "Gustav Klimt", "Henri de Toulouse-Lautrec",
-            "Alphonse Mucha", "Georgia O'Keeffe"
+            "Alphonse Mucha", "Georgia O'Keeffe", "Norman Rockwell", "Jean Giraud",
+            "Brothers Hildebrandt", "Edward Hopper", "Gustave Courbet", "John Singer Sargent",
+            "Johannes Vermeer", "Katsushika Hokusai", "Caravaggio", "Raphael"
         ]
 
         self.art_styles = [

@@ -10,9 +10,10 @@ from dotenv import load_dotenv
 
 from ConfigMgr import ConfigMgr
 from ImageGenerator import ImageGenerator
+from S3Manager import S3Manager
 
 
-class CVTest3:
+class ImagineImage:
     CONFIG_FILE = Path("app_config.json")
     WINDOW_NAME = "Imagine Image"
 
@@ -22,9 +23,11 @@ class CVTest3:
         self.tk_root.withdraw()  # Hide the main Tkinter root window
         self.config = None
         self.image_generator = ImageGenerator()
+        self.s3_manager = S3Manager()
 
     def parse_display_duration(self) -> int:
-        """Parses a HH:MM:SS string into seconds."""
+        """Parses the display_duration string into seconds.
+        The format of string is HH:MM:SS"""
         try:
             duration_str: str = self.config["display_duration"]
             parts = [int(p) for p in duration_str.split(":")]
@@ -33,6 +36,32 @@ class CVTest3:
             return 1000 * parts[0] * 3600 + parts[1] * 60 + parts[2]
         except ValueError:
             return 5  # Default to 5 seconds
+
+    def delete_oldest_files(self, directory: str, min_files: int = 50):
+        """
+        Deletes the oldest files in a directory until only 'min_files' remain.
+
+        :param directory: The path to the directory containing files.
+        :param min_files: The minimum number of files to retain.
+        """
+        dir_path = Path(directory)
+        if not dir_path.exists() or not dir_path.is_dir():
+            raise ValueError(f"Invalid directory: {directory}")
+
+        # Get all files sorted by modification time (oldest first)
+        files = sorted(dir_path.glob("*"), key=lambda f: f.stat().st_mtime)
+
+        # Check if we need to delete any files
+        if len(files) <= min_files:
+            return  # Nothing to delete
+
+        # Delete files until only 'min_files' remain
+        for file in files[:len(files) - min_files]:
+            try:
+                file.unlink()
+                print(f"Deleted: {file}")
+            except Exception as e:
+                print(f"Failed to delete {file}: {e}")
 
     def scale_image_to_fit_screen(self, screen_w: int, screen_h: int, img_w: int, img_h: int) -> tuple[int, int]:
         """
@@ -142,7 +171,7 @@ class CVTest3:
         # initially, we will show a random image previously rendered
         # so that we avoid showing a blank screen while the next
         # image is fetched from the AI
-        print("Initial image from disk at {save_dir_path}")
+        print(f"Initial image from disk at {save_dir_path}")
         current_image: cv2.typing.MatLike = self.get_random_image_from_disk()
         self.display_image(current_image)
         key = cv.waitKey(1000)  # Wait 1 second for the image to display
@@ -151,12 +180,15 @@ class CVTest3:
             if time.time() - last_image_time >= min_display_duration or current_image is None:
                 print("Timer expired; getting new image")
                 screen_xy = (self.tk_root.winfo_screenwidth(), self.tk_root.winfo_screenheight())
-
+                # purge older files from image_out
+                self.delete_oldest_files(self.config["save_directory_path"], int(self.config["max_num_saved_files"]))
                 # generate random prompt and use it to generate an image
                 # then write it to disk
                 current_image_path: Path = self.image_generator.generate_image(screen_xy, save_dir_path)
                 print(f"New image from disk at {str(current_image_path)}")
                 if current_image_path is not None:
+                    # send the image to S3
+                    self.s3_manager.upload_to_s3(current_image_path)
                     # read the new image off disk
                     current_image = self.get_image_from_disk(current_image_path)
                     if current_image is not None:
@@ -166,9 +198,32 @@ class CVTest3:
 
             key = cv.waitKey(250)  # Wait for key press
 
-            if key == ord('q'):
+            if key == ord('q') or key == ord('Q'):
                 return  # Quit the application
-            elif key != -1:  # Any other key opens the options dialog
+            elif key == ord('f') or key == ord('F'):
+                # go full screen
+                cv.namedWindow(self.WINDOW_NAME, cv.WND_PROP_FULLSCREEN)
+                cv.setWindowProperty(self.WINDOW_NAME, cv.WND_PROP_FULLSCREEN, cv.WINDOW_FULLSCREEN)
+                cv.waitKey(200)
+                # remember choice in config
+                self.config["full_screen"] = True
+                # write config
+                config_mgr.save_config(self.config)
+            elif key == ord('s') or key == ord('S'):
+                # Destroy the existing fullscreen window
+                cv.destroyWindow(self.WINDOW_NAME)
+                # Create new window in normal mode
+                cv.namedWindow(self.WINDOW_NAME, cv.WINDOW_NORMAL)
+                cv.resizeWindow(self.WINDOW_NAME, 640, 480)
+                # Display current image in new window
+                self.display_image(current_image)
+                cv.waitKey(200)
+                # remember choice in config
+                self.config["full_screen"] = False
+                # write config
+                config_mgr.save_config(self.config)
+            elif key == ord('o') or key == ord('O'):
+                # Open the options dialog
                 config_mgr.show_options_dialog(self.config)
                 min_display_duration = self.parse_display_duration()
 
@@ -178,5 +233,5 @@ class CVTest3:
 if __name__ == '__main__':
     load_dotenv()
 
-    app = CVTest3()
+    app = ImagineImage()
     app.main()
