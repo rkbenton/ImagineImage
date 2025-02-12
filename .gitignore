@@ -129,9 +129,7 @@ celerybeat.pid
 *.sage.py
 
 # Environments
-../FullScreenTesting/.env
-.venv
-.venv1
+.venv*
 .env
 env/
 venv/
