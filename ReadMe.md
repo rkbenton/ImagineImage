@@ -5,8 +5,8 @@ The vision for this project springboards from the [InkyPi](https://www.youtube.c
 The idea here is to generate interesting images for our 
 [Samsung Frame](https://www.reddit.com/r/TheFrame/comments/17tjy87/honest_opinion_about_the_frame_tv/). 
 
-To accomplish this, we have a python program running on a Raspberry Pi. It uses an AI to augment and 
-embellish prompts, and then directs [another AI](https://cookbook.openai.com/articles/what_is_new_with_dalle_3) 
+To accomplish this, we have a Python program running on a Raspberry Pi. It uses an AI to augment and 
+embellish textual prompts for image-generation, and then directs [another AI](https://cookbook.openai.com/articles/what_is_new_with_dalle_3) 
 to generate images based on those prompts. The image is then displayed.
 
 Note that on the Raspberry Pi (Raspi,) we use `systemd` to run our app on startup, and automatically
@@ -29,6 +29,8 @@ in the `app_config.json` file interactively. You may have to quit the app (`Q`) 
 start or let the app restart for some of the values to take effect. (See
 [Keyboard Commands](#keyboard-commands) for more shortcuts.)
 
+The project is [available on GitHub](https://github.com/rkbenton/ImagineImage)
+
 
 # Keyboard Commands
 
@@ -43,10 +45,13 @@ start or let the app restart for some of the values to take effect. (See
 # Operational Notes
 
 ## SSH
-Currently, if you're on the SparkleKitten network, ssh in from Becky's laptop with:
+At Malden, the Raspi is on the SparkleKitten network; at the cabin, it's on Lair Loft.
+
+You can ssh in from Becky's laptop with:
 ```
 ssh becky@irving.local
 ```
+
 ## Remote Access
 Turn on _Raspberry Pi Connect_ on the Raspi. It's usually on the menubar to the right.
 
