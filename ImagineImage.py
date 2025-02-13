@@ -26,16 +26,18 @@ class ImagineImage:
         self.s3_manager = S3Manager()
 
     def parse_display_duration(self) -> int:
-        """Parses the display_duration string into seconds.
-        The format of string is HH:MM:SS"""
+        """
+        Parses the display_duration string into seconds.
+        The format of string is HH:MM:SS
+        """
         try:
             duration_str: str = self.config["display_duration"]
             parts = [int(p) for p in duration_str.split(":")]
             while len(parts) < 3:
                 parts.insert(0, 0)  # Fill missing values with zeros
-            return 1000 * parts[0] * 3600 + parts[1] * 60 + parts[2]
+            return parts[0] * 3600 + parts[1] * 60 + parts[2]
         except ValueError:
-            return 5  # Default to 5 seconds
+            return 3600  # 1 hour, 3600 seconds
 
     def delete_oldest_files(self, directory: str, min_files: int = 50):
         """
