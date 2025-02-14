@@ -1,4 +1,5 @@
 import random
+import sys
 import time
 import tkinter as tk  # Tkinter for GUI and configuration dialog
 from pathlib import Path
@@ -229,10 +230,11 @@ class ImagineImage:
                 config_mgr.show_options_dialog(self.config)
                 min_display_duration = self.parse_display_duration()
 
-            time.sleep(0.2)  # Reduce CPU usage
+            time.sleep(0.2)  # in seconds
 
 
 if __name__ == '__main__':
+    print("Service started!", file=sys.stdout, flush=True)
     load_dotenv()
 
     app = ImagineImage()
