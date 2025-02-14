@@ -230,6 +230,7 @@ class ImagineImage:
                 config_mgr.show_options_dialog(self.config)
                 min_display_duration = self.parse_display_duration()
 
+            sys.stdout.flush()
             time.sleep(0.2)  # in seconds
 
 
