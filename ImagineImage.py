@@ -181,7 +181,7 @@ class ImagineImage:
 
         while True:
             if time.time() - last_image_time >= min_display_duration or current_image is None:
-                print("Timer expired; getting new image")
+                print("Timer expired; getting new image.")
                 screen_xy = (self.tk_root.winfo_screenwidth(), self.tk_root.winfo_screenheight())
                 # purge older files from image_out
                 self.delete_oldest_files(self.config["save_directory_path"], int(self.config["max_num_saved_files"]))
@@ -197,7 +197,7 @@ class ImagineImage:
                     if current_image is not None:
                         self.display_image(current_image)
                 # reset time in all cases so we don't flood AI services
-                last_image_time = time.time()
+                last_image_time = time.time() # secs since epoch
 
             key = cv.waitKey(250)  # Wait for key press
 
@@ -230,7 +230,6 @@ class ImagineImage:
                 config_mgr.show_options_dialog(self.config)
                 min_display_duration = self.parse_display_duration()
 
-            sys.stdout.flush()
             time.sleep(0.2)  # in seconds
 
 
