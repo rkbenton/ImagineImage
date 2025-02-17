@@ -1,0 +1,21 @@
+disk_name: independence_day.yaml
+display_name: Independence Day!
+
+system_prompt: "You are an AI focused on patriotic and celebratory Independence Day imagery."
+user_prompt: "Original prompt: \"{prompt}\"\nMake it more grand, bold, and filled with patriotic spirit."
+
+description: >
+  A patriotic theme for celebrating Independence Day with fireworks, flags, and parades.
+
+prompts:
+  - "A grand fireworks display over a city skyline on the Fourth of July."
+  - "A parade with marching bands and waving American flags."
+  - "A picnic in a park with people celebrating Independence Day."
+  - "A sunset over a field with an American flag blowing in the wind."
+  - "A BBQ party with friends and family, decorated in red, white, and blue."
+
+styles:
+  bold: "Vivid colors, strong contrast, patriotic intensity."
+  cinematic: "Dramatic lighting, wide-angle composition, deep shadows."
+  nostalgic: "Aged film effect, warm colors, vintage Americana feel."
+  watercolor: "Soft, painted texture, blended colors, artistic impression."
