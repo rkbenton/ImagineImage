@@ -49,6 +49,16 @@ def test_theme_empty_styles():
 
     assert theme.styles == {}
 
+def test_theme_loading():
+    mgr = ThemeMgr("themes")
+    a_list = mgr.get_theme_list()
+    print(f"The following themes are available:{str(a_list)}")
+    some_file=a_list[1] + ".yaml"
+    print(f"getting {some_file}")
+    a_theme = mgr.get_theme(some_file)
+    print(a_theme)
+    print("\n\n")
+
 
 if __name__ == "__main__":
     pytest.main()

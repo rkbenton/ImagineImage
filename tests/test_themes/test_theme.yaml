@@ -1,0 +1,16 @@
+disk_name: test_theme.yaml
+display_name: Test Theme!
+system_prompt: "You are a bonkers AI."
+user_prompt: "Original prompt: \"{prompt}\"\nMake it more cool yet subtle."
+
+description: >
+  A test description.
+  It's really good.
+
+prompts:
+  - "A purple onion eating a sandwich"
+  - "Two dogs discussing the weather"
+
+styles:
+  realistic: "photorealistic"
+  fantasy: "With dragons"
