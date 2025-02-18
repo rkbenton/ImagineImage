@@ -1,5 +1,7 @@
 import json  # JSON library for configuration handling
 from pathlib import Path
+import tkinter as tk  # Tkinter for GUI and configuration dialog
+import tkinter.messagebox
 
 
 class ConfigMgr:
@@ -110,11 +112,83 @@ class ConfigMgr:
         if errors:
             raise ValueError("\n".join(errors))
 
+    def show_options_dialog(self, config):
+        dialog = tk.Toplevel()
+        dialog.title("Options")
+        dialog.geometry("600x500")
+        dialog.grab_set()
 
-if __name__ == "__main__":
-    config_mgr = ConfigMgr()
-    config = config_mgr.load_config()
+        main_frame = tk.Frame(dialog)
+        main_frame.pack(fill=tk.BOTH, expand=True)
 
-    print("Current Theme:", config["active_theme"])
-    print("Current Style:", config["active_style"])
-    print("done")
+        # Duration (HH:MM:SS format)
+        tk.Label(main_frame, text="Display Duration (HH:MM:SS):").pack(anchor=tk.W)
+        duration_var = tk.StringVar(value=config.get("display_duration", self.DEFAULT_DISPLAY_DURATION))
+        duration_entry = tk.Entry(main_frame, textvariable=duration_var)
+        duration_entry.pack(fill=tk.X)
+
+        # Fullscreen
+        fullscreen_var = tk.BooleanVar(value=config["full_screen"])
+        tk.Checkbutton(main_frame, text="Full Screen", variable=fullscreen_var).pack(anchor=tk.W)
+        # Custom Prompt
+        tk.Label(main_frame, text="Custom Prompt:").pack(anchor=tk.W)
+        prompt_var = tk.StringVar(value=config["custom_prompt"])
+        tk.Entry(main_frame, textvariable=prompt_var).pack(fill=tk.X)
+
+        # Embellish Prompt
+        embellish_var = tk.BooleanVar(value=config["embellish_custom_prompt"])
+        tk.Checkbutton(main_frame, text="Embellish Custom Prompt", variable=embellish_var).pack(anchor=tk.W)
+
+        # Max Files
+        tk.Label(main_frame, text="Maximum Saved Files:").pack(anchor=tk.W)
+        max_files_var = tk.StringVar(value=str(config["max_num_saved_files"]))
+        tk.Entry(main_frame, textvariable=max_files_var).pack(fill=tk.X)
+
+        # Save Directory
+        tk.Label(main_frame, text="Save Directory:").pack(anchor=tk.W)
+        save_dir_var = tk.StringVar(value=config["save_directory_path"])
+        dir_frame = tk.Frame(main_frame)
+        dir_frame.pack(fill=tk.X)
+        tk.Entry(dir_frame, textvariable=save_dir_var).pack(side=tk.LEFT, fill=tk.X, expand=True)
+        tk.Button(dir_frame, text="Browse", command=lambda: save_dir_var.set(
+            tk.filedialog.askdirectory(initialdir=save_dir_var.get())
+        )).pack(side=tk.RIGHT)
+
+        # Background Color
+        tk.Label(main_frame, text="Background Color (R,G,B):").pack(anchor=tk.W)
+        color_frame = tk.Frame(main_frame)
+        color_frame.pack(fill=tk.X)
+        color_vars = []
+        for i, val in enumerate(config["background_color"]):
+            var = tk.StringVar(value=str(val))
+            color_vars.append(var)
+            tk.Entry(color_frame, textvariable=var, width=5).pack(side=tk.LEFT, padx=2)
+
+        def save_changes():
+            try:
+                new_config = {
+                    "display_duration": duration_var.get(),
+                    "full_screen": fullscreen_var.get(),
+                    "custom_prompt": prompt_var.get(),
+                    "embellish_custom_prompt": embellish_var.get(),
+                    "max_num_saved_files": int(max_files_var.get()),
+                    "save_directory_path": save_dir_var.get(),
+                    "background_color": [int(v.get()) for v in color_vars]
+                }
+
+                self.validate_config_values(new_config)
+                config.update(new_config)
+                print("Config updated successfully.")  # Debugging
+            except ValueError as e:
+                tk.messagebox.showerror("Error", f"Invalid input: {str(e)}")
+
+            print("Closing dialog...")  # Debugging
+            dialog.destroy()
+
+        button_frame = tk.Frame(dialog)
+        button_frame.pack(fill=tk.X, pady=10)
+        tk.Button(button_frame, text="OK", command=save_changes).pack(side=tk.RIGHT, padx=5)
+        tk.Button(button_frame, text="Cancel", command=dialog.destroy).pack(side=tk.RIGHT)
+
+        dialog.wait_window()
+        return config
