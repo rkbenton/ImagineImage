@@ -5,7 +5,6 @@ This module defines a class `ImageGenerator` that generates images using OpenAI'
 It constructs prompts from the `PromptGenerator` and fetches images accordingly.
 """
 
-import os
 from datetime import datetime
 from io import BytesIO
 from pathlib import Path
@@ -23,11 +22,10 @@ class ImageGenerator:
     It integrates a `PromptGenerator` to construct creative prompts and fetches images accordingly.
     """
 
-    def __init__(self, prompt_generator: PromptGenerator):
+    def __init__(self, prompt_generator: PromptGenerator, api_key):
         """
         Initializes the ImageGenerator with OpenAI API client and a PromptGenerator instance.
         """
-        api_key = os.environ["OPEN_AI_SECRET"]
         self.client = OpenAI(api_key=api_key)
         self.prompt_generator = prompt_generator
 
@@ -80,24 +78,16 @@ class ImageGenerator:
         :param image_directory: The directory where the image will be saved.
         :return: Path to the generated image file or None on error.
         """
-        # Generate a prompt using the prompt generator
-        prompt_data:dict[str,str] = self.prompt_generator.generate_prompt()
+        # Generate local prompt data
+        prompt_data: dict[str, str] = self.prompt_generator.generate_prompt()
 
-        """
-                full_prompt: str = user_prompt_template.format(prompt=original_prompt)
-        full_prompt += f" and use the following style: {style_text}"
-
-        result = {
-            FULL_PROMPT: full_prompt,
-            SYSTEM_PROMPT: system_prompt
-        }"""
-
-        full_prompt = prompt_data[PromptGenerator.FULL_PROMPT]
-        system_prompt = prompt_data[PromptGenerator.SYSTEM_PROMPT]
-        print(f"Generated full prompt:\n{full_prompt}\nand system prompt:\n{system_prompt}")
+        # Embellish the prompt using ChatGPT
+        embellished_prompt = self.prompt_generator.embellish_prompt(
+            prompt_data[PromptGenerator.FULL_PROMPT],
+            prompt_data[PromptGenerator.SYSTEM_PROMPT])
 
         # Fetch the generated image
-        img: Image = self.get_image_from_service(prompt, port_xy)
+        img: Image = self.get_image_from_service(embellished_prompt, port_xy)
         if img is None:
             print("Image generation failed")
             return None
@@ -117,7 +107,7 @@ class ImageGenerator:
         # Save prompt as text file (non-critical, but useful)
         try:
             with open(prompt_path, 'w') as f:
-                f.write(prompt)
+                f.write(embellished_prompt)
         except IOError as e:
             print(f"Error writing prompt to file {prompt_path}: {e}")
 
