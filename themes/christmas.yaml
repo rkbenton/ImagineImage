@@ -1,0 +1,21 @@
+disk_name: christmas.yaml
+display_name: Christmas!
+system_prompt: "You are an AI specializing in festive and holiday-themed imagery."
+user_prompt: "Original prompt: \"{prompt}\"\nMake it more warm, cozy, and magical."
+
+description: >
+  A joyful and festive theme celebrating the Christmas season.
+
+prompts:
+  - "A snowy village glowing with Christmas lights."
+  - "Santa Claus flying over rooftops on Christmas Eve."
+  - "A cozy living room with stockings by the fireplace."
+  - "A Christmas tree decorated with ornaments and twinkling lights."
+  - "Children opening presents on Christmas morning."
+
+styles:
+  random: "A randomly selected style will be randomly selected!"
+  traditional: "Classic holiday colors, warm lighting, nostalgic feel."
+  modern: "Minimalist decorations, elegant silver and blue tones."
+  whimsical: "Cartoonish, exaggerated holiday elements, playful atmosphere."
+  vintage: "Retro holiday postcard look, grainy textures, muted tones."

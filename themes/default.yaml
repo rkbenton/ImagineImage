@@ -1,0 +1,12 @@
+disk_name: default.yaml
+display_name: Default
+description: A basic default theme
+prompts:
+- A serene landscape
+- A futuristic skyline
+styles:
+  classic: Muted tones, soft lighting.
+system_prompt: You are a creative AI.
+user_prompt: 'Original prompt: "{prompt}"
+
+  Make it more artistic and vivid.'

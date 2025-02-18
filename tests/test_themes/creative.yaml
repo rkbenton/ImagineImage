@@ -1,0 +1,17 @@
+disk_name: creative.yaml
+display_name: Creative
+system_prompt: "You are a highly imaginative AI that generates unique and creative image descriptions."
+user_prompt: "Original prompt: \"{prompt}\"\nMake it more detailed, vivid, and unique."
+
+description: >
+  A free-form theme for artistic, imaginative, and abstract creations.
+
+prompts:
+  - "A surreal landscape with floating islands and purple skies."
+  - "An abstract painting of a futuristic city at night."
+
+styles:
+  random: "Rando dando, we like Mando!"
+  realistic: "Highly detailed, photorealistic rendering, ultra-HD quality."
+  fantasy: "Bright colors, ethereal lighting, magical atmosphere."
+  cyberpunk: "Neon lights, futuristic city, dark and moody aesthetic."

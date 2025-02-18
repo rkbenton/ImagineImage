@@ -1,0 +1,23 @@
+disk_name: futuristic.yaml
+display_name: Futuristic
+
+system_prompt: "You are an AI that envisions futuristic and sci-fi-inspired imagery."
+user_prompt: "Original prompt: \"{prompt}\"\nMake it more advanced, sleek, and visionary."
+
+description: >
+  A high-tech and futuristic theme inspired by science fiction and advanced technology.
+
+prompts:
+  - "A sprawling cyberpunk metropolis with neon lights."
+  - "A sleek space station orbiting a distant planet."
+  - "A humanoid robot interacting with humans in a futuristic city."
+  - "A hyper-modern transportation system with flying cars."
+  - "A mysterious alien landscape with strange flora and fauna."
+
+styles:
+  random: "A randomly selected style will be randomly selected!"
+  cyberpunk: "Neon glow, dark cityscape, high-tech aesthetics."
+  utopian: "Bright, clean, futuristic design with sleek architecture."
+  dystopian: "Dark, gritty atmosphere with post-apocalyptic tones."
+  retro-futurism: "Mid-century sci-fi aesthetic, nostalgic space-age design."
+  holographic: "Glowing lights, transparent surfaces, sleek modernity."

@@ -1,0 +1,22 @@
+disk_name: halloween.yaml
+display_name: Halloween
+
+system_prompt: "You are an AI expert in spooky and atmospheric Halloween imagery."
+user_prompt: "Original prompt: \"{prompt}\"\nMake it more eerie, mysterious, and immersive."
+
+description: >
+  A haunting and fun theme celebrating the spirit of Halloween.
+
+prompts:
+  - "A haunted house on a hill under a full moon."
+  - "A pumpkin patch glowing with carved jack-o'-lanterns."
+  - "A witch flying on a broomstick across a cloudy night sky."
+  - "A spooky graveyard with mist rolling over the tombstones."
+  - "A group of children trick-or-treating in elaborate costumes."
+
+styles:
+  random: "A randomly selected style will be randomly selected!"
+  dark: "Moody lighting, deep shadows, gothic horror aesthetic."
+  vibrant: "Bright Halloween colors, exaggerated cartoon-like elements."
+  cinematic: "Dramatic angles, eerie lighting, high contrast."
+  rustic: "Hand-painted vintage Halloween illustration style."

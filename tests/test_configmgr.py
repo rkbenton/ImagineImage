@@ -21,13 +21,16 @@ def config_mgr(temp_config_file):
 def sample_config():
     """Returns a sample valid configuration"""
     return {
-        "display_duration": "00:00:05",
+        "display_duration": ConfigMgr.DEFAULT_DISPLAY_DURATION,
         "full_screen": True,
-        "custom_prompt": "test prompt",
+        "custom_prompt": "",
         "embellish_custom_prompt": True,
         "max_num_saved_files": 200,
         "save_directory_path": "image_out",
-        "background_color": [0, 0, 0]
+        "background_color": [0, 0, 0],
+        "active_theme": ConfigMgr.DEFAULT_THEME_NAME,
+        "active_style": ConfigMgr.DEFAULT_STYLE_NAME,
+        "themes_directory": ConfigMgr.DEFAULT_THEMES_DIR_NAME
     }
 
 
@@ -61,10 +64,13 @@ class TestConfigMgr:
     def test_load_config_new_file(self, config_mgr):
         """Test loading config when file doesn't exist"""
         config = config_mgr.load_config()
-        assert config["display_duration"] == "00:00:05"
+        assert config["display_duration"] == ConfigMgr.DEFAULT_DISPLAY_DURATION
         assert config["full_screen"] is True
         assert isinstance(config["max_num_saved_files"], int)
         assert len(config["background_color"]) == 3
+        assert config["active_theme"] == ConfigMgr.DEFAULT_THEME_NAME
+        assert config["active_style"] == ConfigMgr.DEFAULT_STYLE_NAME
+        assert config["themes_directory"] == ConfigMgr.DEFAULT_THEMES_DIR_NAME
 
     def test_save_and_load_config(self, config_mgr, sample_config):
         """Test saving and loading configuration"""
@@ -116,7 +122,10 @@ class TestConfigMgr:
             "embellish_custom_prompt",
             "max_num_saved_files",
             "save_directory_path",
-            "background_color"
+            "background_color",
+            'active_theme',
+            'active_style',
+            'themes_directory'
         }
         assert set(config.keys()) == required_keys
 

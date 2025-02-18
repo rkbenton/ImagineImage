@@ -1,3 +1,4 @@
+import os
 import random
 import sys
 import time
@@ -11,6 +12,7 @@ from dotenv import load_dotenv
 
 from ConfigMgr import ConfigMgr
 from ImageGenerator import ImageGenerator
+from PromptGenerator import PromptGenerator
 from S3Manager import S3Manager
 
 
@@ -23,7 +25,10 @@ class ImagineImage:
         self.tk_root = tk.Tk()
         self.tk_root.withdraw()  # Hide the main Tkinter root window
         self.config = None
-        self.image_generator = ImageGenerator()
+        self.config_mgr = ConfigMgr()
+        api_key = os.environ["OPEN_AI_SECRET"]
+        self.prompt_generator = PromptGenerator(config_mgr=self.config_mgr, api_key=api_key)
+        self.image_generator = ImageGenerator(prompt_generator=self.prompt_generator, api_key=api_key)
         self.s3_manager = S3Manager()
 
     def parse_display_duration(self) -> int:
@@ -74,27 +79,27 @@ class ImagineImage:
         scale = min(screen_w / img_w, screen_h / img_h)
         return int(img_w * scale), int(img_h * scale)
 
-    def fetch_image_from_ai(self) -> cv2.typing.MatLike | None:
-        """
-        This will create a text prompt and use that when calling the
-        image generation service. The service will write the image
-        to disk. This method will the read the file and generate
-        a cv2 image. Note that the image is *not* scaled at this time.
-        @return: the image in cv2 format, or None in case of error
-        """
-        screen_width = self.tk_root.winfo_screenwidth()
-        screen_height = self.tk_root.winfo_screenheight()
-        image_dir: str = self.config["save_directory_path"]
-        cv2_img = None
-
-        # request image from AI - it will write image to disk
-        # note: image is *not* scaled to port; dimensions are
-        # used to request approximate resolution from service.
-        image_path: Path = self.image_generator.generate_image((screen_width, screen_height), image_dir)
-        if image_path is not None:
-            # read resulting image from disk
-            cv2_img = cv2.imread(str(image_path))
-        return cv2_img
+    # def fetch_image_from_ai(self) -> cv2.typing.MatLike | None:
+    #     """
+    #     This will create a text prompt and use that when calling the
+    #     image generation service. Then, it will write the image
+    #     to disk. This method will the read the file and generate
+    #     a cv2 image. Note that the image is *not* scaled at this time.
+    #     @return: the image in cv2 format, or None in case of error
+    #     """
+    #     screen_width = self.tk_root.winfo_screenwidth()
+    #     screen_height = self.tk_root.winfo_screenheight()
+    #     image_dir: str = self.config["save_directory_path"]
+    #     cv2_img = None
+    #
+    #     # request image from AI - it will write image to disk
+    #     # note: image is *not* scaled to the display port; dimensions
+    #     # are used to request approximate resolution from service.
+    #     image_path: Path = self.image_generator.generate_image((screen_width, screen_height), image_dir)
+    #     if image_path is not None:
+    #         # read resulting image from disk
+    #         cv2_img = cv2.imread(str(image_path))
+    #     return cv2_img
 
     def get_random_image_from_disk(self) -> cv2.typing.MatLike | None:
         """
@@ -177,7 +182,7 @@ class ImagineImage:
         print(f"Initial image from disk at {save_dir_path}")
         current_image: cv2.typing.MatLike = self.get_random_image_from_disk()
         self.display_image(current_image)
-        key = cv.waitKey(1000)  # Wait 1 second for the image to display
+        _ = cv.waitKey(1000)  # Wait 1 second for the image to display
 
         while True:
             if time.time() - last_image_time >= min_display_duration or current_image is None:
