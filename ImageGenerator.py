@@ -23,13 +23,13 @@ class ImageGenerator:
     It integrates a `PromptGenerator` to construct creative prompts and fetches images accordingly.
     """
 
-    def __init__(self):
+    def __init__(self, prompt_generator: PromptGenerator):
         """
         Initializes the ImageGenerator with OpenAI API client and a PromptGenerator instance.
         """
         api_key = os.environ["OPEN_AI_SECRET"]
         self.client = OpenAI(api_key=api_key)
-        self.prompt_generator = PromptGenerator()
+        self.prompt_generator = prompt_generator
 
     def get_image_from_service(self, prompt: str, port_xy: tuple[int, int]) -> Image:
         """
@@ -81,8 +81,20 @@ class ImageGenerator:
         :return: Path to the generated image file or None on error.
         """
         # Generate a prompt using the prompt generator
-        prompt = self.prompt_generator.get_image_prompt()
-        print(f"Generated prompt: {prompt}")
+        prompt_data:dict[str,str] = self.prompt_generator.generate_prompt()
+
+        """
+                full_prompt: str = user_prompt_template.format(prompt=original_prompt)
+        full_prompt += f" and use the following style: {style_text}"
+
+        result = {
+            FULL_PROMPT: full_prompt,
+            SYSTEM_PROMPT: system_prompt
+        }"""
+
+        full_prompt = prompt_data[PromptGenerator.FULL_PROMPT]
+        system_prompt = prompt_data[PromptGenerator.SYSTEM_PROMPT]
+        print(f"Generated full prompt:\n{full_prompt}\nand system prompt:\n{system_prompt}")
 
         # Fetch the generated image
         img: Image = self.get_image_from_service(prompt, port_xy)
