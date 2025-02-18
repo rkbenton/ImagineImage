@@ -71,14 +71,3 @@ class ThemeMgr:
             os.remove(theme_path)
         else:
             raise FileNotFoundError(f"Theme '{disk_name}' not found.")
-
-# Example usage
-if __name__ == "__main__":
-    mgr = ThemeMgr("themes")
-    a_list = mgr.get_theme_list()
-    print(f"The following themes are available:{str(a_list)}")
-    some_file=a_list[1] + ".yaml"
-    print(f"getting {some_file}")
-    a_theme = mgr.get_theme(some_file)
-    print(a_theme)
-    print("\n\n")
