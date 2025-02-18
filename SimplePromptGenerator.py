@@ -6,25 +6,15 @@ using OpenAI's API. It builds prompts based on various themes, styles, and
 attributes, offering both random and structured prompt generation.
 """
 
-import os
 import random
 
-from openai import OpenAI
-
-
-class PromptGenerator:
+class SimplePromptGenerator:
     """
     A class for generating creative image prompts using OpenAI's API.
     It includes predefined subjects, attributes, actions, and styles for prompt construction.
     """
 
     def __init__(self):
-        """
-        Initializes the PromptGenerator with predefined lists and OpenAI API client.
-        """
-        api_key = os.environ["OPEN_AI_SECRET"]
-        self.client = OpenAI(api_key=api_key)
-
         # Data for building priming prompts
         self.simple_prompts = [
             "Generate a creative image prompt involving a stand of birch trees.",
@@ -228,46 +218,6 @@ class PromptGenerator:
             "Minimalism", "watercolor", "art nouveau", "streamline moderne", "cubist", "pointillist"
         ]
 
-    def get_image_prompt(self):
-        """
-        Generates an image prompt using OpenAI's API, either randomly or with a structured approach.
-
-        :return: A creative image prompt as a string.
-        """
-        let_ai_create_by_itself = random.randrange(0, 100) <= 10
-        if let_ai_create_by_itself:
-            system_prompt = """You are a creative assistant generating extremely random and unique image prompts. 
-            Avoid common themes. Focus on unexpected, unconventional, and bizarre combinations 
-            of art style, medium, subjects, time periods, and moods. No repetition."""
-            user_prompt = "Give me a completely random image prompt, something unexpected and creative!"
-        elif random.randrange(0, 100) <= 50:
-            system_prompt = """You are a creative assistant specializing in generating highly descriptive 
-            and unique prompts for creating images. Ensure the prompts are vivid and imaginative."""
-            user_prompt_raw = self.build_from_simple_prompts()
-            user_prompt = f"Original prompt: \"{user_prompt_raw}\"\nRewrite it to make it more detailed and unique."
-        else:
-            system_prompt = """You are a creative assistant specializing in generating highly descriptive 
-            and unique prompts for creating images. Ensure the prompts are vivid, imaginative, and unexpected."""
-            user_prompt_raw = random.choice(
-                [self.build_basic, self.build_from_simple_prompts, self.build_with_style, self.build_animal])()
-            user_prompt = f"Original prompt: \"{user_prompt_raw}\"\nRewrite it to make it more detailed and unique."
-
-        try:
-            response = self.client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt}
-                ],
-                temperature=1
-            )
-            generated_prompt = response.choices[0].message.content.strip()
-        except Exception as e:
-            print(f"Failed to get prompt from AI: {e}")
-            generated_prompt = self.build_from_simple_prompts()
-
-        return generated_prompt
-
     def build_animal(self):
         """Generates a prompt featuring an animal in a specific artistic style."""
         style = random.choice(self.art_styles) if random.randrange(0, 100) > 50 else random.choice(self.artists)
@@ -286,3 +236,32 @@ class PromptGenerator:
     def build_from_simple_prompts(self) -> str:
         """Returns a completely random pre-defined prompt."""
         return random.choice(self.simple_prompts)
+
+    def create_image_prompt(self) -> dict[str, str]:
+        """
+        Generates an image prompt using OpenAI's API, either randomly or with a structured approach.
+
+        :return: a dictionary with a system prompt and a user prompt.
+        """
+        let_ai_create_by_itself = random.randrange(0, 100) <= 10
+        if let_ai_create_by_itself:
+            system_prompt = """You are a creative assistant generating extremely random and unique image prompts. 
+            Avoid common themes. Focus on unexpected, unconventional, and bizarre combinations 
+            of art style, medium, subjects, time periods, and moods. No repetition."""
+            user_prompt = "Give me a completely random image prompt, something unexpected and creative!"
+        elif random.randrange(0, 100) <= 50:
+            system_prompt = """You are a creative assistant specializing in generating highly descriptive 
+            and unique prompts for creating images. Ensure the prompts are vivid and imaginative."""
+            user_prompt_raw = self.build_from_simple_prompts()
+            user_prompt = f"Original prompt: \"{user_prompt_raw}\"\nRewrite it to make it more detailed and unique."
+        else:
+            system_prompt = """You are a creative assistant specializing in generating highly descriptive 
+            and unique prompts for creating images. Ensure the prompts are vivid, imaginative, and unexpected."""
+            user_prompt_raw = random.choice(
+                [self.build_basic, self.build_from_simple_prompts, self.build_with_style, self.build_animal])()
+            user_prompt = f"Original prompt: \"{user_prompt_raw}\"\nRewrite it to make it more detailed and unique."
+        result = {
+            "full_prompt": user_prompt,
+            "system_prompt": system_prompt
+        }
+        return result
