@@ -1,77 +1,49 @@
-import json
-import yaml
 import random
-import os
-from typing import Dict, Any
 
-CONFIG_FILE: str = "app_config.json"
-THEMES_DIR: str = "themes"  # Directory where YAML files are stored
+from ConfigMgr import ConfigMgr
+from Theme import Theme
+from ThemeMgr import ThemeMgr
 
 
 class PromptGenerator:
-    def __init__(self, config_file: str = CONFIG_FILE, themes_dir: str = THEMES_DIR) -> None:
-        self.config_file = config_file
-        self.themes_dir = themes_dir
-        self.config = self.load_config()
+    FULL_PROMPT = 'full_prompt'
+    SYSTEM_PROMPT = 'system_prompt'
 
-    def load_config(self) -> Dict[str, Any]:
-        """Load app configuration from JSON file."""
-        with open(self.config_file, "r") as f:
-            return json.load(f)
+    def __init__(self, config_mgr: ConfigMgr) -> None:
+        self.config_mgr = config_mgr
+        self.config = self.config_mgr.load_config()
+        self.theme_mgr = ThemeMgr(self.config["themes_directory"])
 
-    def load_theme_yaml(self, theme_name: str) -> Dict[str, Any]:
-        """Load the YAML file for the given theme."""
-        theme_file: str = os.path.join(self.themes_dir, f"{theme_name.lower().replace(' ', '_')}.yaml")
+    def generate_prompt(self) -> dict[str, str]:
+        """
+        Generate a themed prompt based on theme chosen in the config file.
+        Returns: dictionary of prompt data; keys are "full_prompt", and "system_prompt"
+        """
+        self.config = self.config_mgr.load_config()
+        active_theme_name = self.config["active_theme"]
+        theme_data: Theme = self.theme_mgr.get_theme(active_theme_name)
 
-        if not os.path.exists(theme_file):
-            print(f"Warning: Theme '{theme_name}' not found. Defaulting to 'creative'.")
-            return self.load_theme_yaml("creative")
+        system_prompt: str = theme_data.system_prompt
+        user_prompt_template: str = theme_data.user_prompt
 
-        with open(theme_file, "r") as f:
-            theme_data = yaml.safe_load(f)
+        # pick a base prompt out of the list
+        original_prompt: str = random.choice(theme_data.prompts)
 
-        # Ensure "Random" is an option in styles
-        if "styles" in theme_data and "Random" not in theme_data["styles"]:
-            theme_data["styles"]["Random"] = "Choose a style randomly."
-
-        return theme_data
-
-    def generate_prompt(self) -> str:
-        """Generate a themed prompt with an optional style."""
-        theme_name: str = self.config.get("active_theme", "creative")
-        active_style: str = self.config.get("active_style", "Random")
-
-        theme_data: Dict[str, Any] = self.load_theme_yaml(theme_name)
-
-        system_prompt: str = theme_data.get("system_prompt", "")
-        user_prompt_template: str = theme_data.get("user_prompt",
-                                                   "Original prompt: \"{prompt}\"\nRewrite it to make it more detailed and unique.")
-
-        prompts: list[str] = theme_data.get("prompts", [])
-        styles: Dict[str, str] = theme_data.get("styles", {})
-
-        if not prompts:
-            print(f"Error: No prompts found for theme '{theme_name}'. Defaulting to 'creative'.")
-            theme_data = self.load_theme_yaml("creative")
-            prompts = theme_data.get("prompts", [])
-            styles = theme_data.get("styles", {})
-
-        prompt: str = random.choice(prompts)
-
-        # Select style
-        if active_style == "Random" or active_style not in styles:
-            available_styles = [s for s in styles if s != "Random"]
-            style_text: str = styles[random.choice(available_styles)] if available_styles else ""
+        # select style
+        active_style = self.config["active_style"]
+        if active_style == "random" or active_style not in theme_data.styles:
+            available_styles = [s for s in theme_data.styles if s != "random"]
+            style_text: str = random.choice(available_styles)
         else:
-            style_text: str = styles[active_style]
+            style_text: str = theme_data.styles[active_style]
 
-        final_prompt: str = f"{prompt} {style_text}"
-        formatted_user_prompt: str = user_prompt_template.format(prompt=final_prompt)
+        # apply user_prompt_template to the base prompt and styles
+        full_prompt: str = user_prompt_template.format(prompt=original_prompt)
+        full_prompt += f" and use the following style: {style_text}"
 
-        return f"{system_prompt}\n{formatted_user_prompt}" if system_prompt else formatted_user_prompt
+        result = {
+            self.FULL_PROMPT: full_prompt,
+            self.SYSTEM_PROMPT: system_prompt
+        }
 
-
-if __name__ == "__main__":
-    generator = PromptGenerator()
-    print(generator.generate_prompt())
-    print("done")
+        return result
