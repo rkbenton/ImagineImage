@@ -79,28 +79,6 @@ class ImagineImage:
         scale = min(screen_w / img_w, screen_h / img_h)
         return int(img_w * scale), int(img_h * scale)
 
-    # def fetch_image_from_ai(self) -> cv2.typing.MatLike | None:
-    #     """
-    #     This will create a text prompt and use that when calling the
-    #     image generation service. Then, it will write the image
-    #     to disk. This method will the read the file and generate
-    #     a cv2 image. Note that the image is *not* scaled at this time.
-    #     @return: the image in cv2 format, or None in case of error
-    #     """
-    #     screen_width = self.tk_root.winfo_screenwidth()
-    #     screen_height = self.tk_root.winfo_screenheight()
-    #     image_dir: str = self.config["save_directory_path"]
-    #     cv2_img = None
-    #
-    #     # request image from AI - it will write image to disk
-    #     # note: image is *not* scaled to the display port; dimensions
-    #     # are used to request approximate resolution from service.
-    #     image_path: Path = self.image_generator.generate_image((screen_width, screen_height), image_dir)
-    #     if image_path is not None:
-    #         # read resulting image from disk
-    #         cv2_img = cv2.imread(str(image_path))
-    #     return cv2_img
-
     def get_random_image_from_disk(self) -> cv2.typing.MatLike | None:
         """
         Get a random image from the image directory if there is one.
