@@ -15,6 +15,7 @@ prompts:
   - "A BBQ party with friends and family, decorated in red, white, and blue."
 
 styles:
+  random: "A randomly selected style will be randomly selected!"
   bold: "Vivid colors, strong contrast, patriotic intensity."
   cinematic: "Dramatic lighting, wide-angle composition, deep shadows."
   nostalgic: "Aged film effect, warm colors, vintage Americana feel."

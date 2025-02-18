@@ -15,6 +15,7 @@ prompts:
   - "A group of children trick-or-treating in elaborate costumes."
 
 styles:
+  random: "A randomly selected style will be randomly selected!"
   dark: "Moody lighting, deep shadows, gothic horror aesthetic."
   vibrant: "Bright Halloween colors, exaggerated cartoon-like elements."
   cinematic: "Dramatic angles, eerie lighting, high contrast."

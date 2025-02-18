@@ -9,15 +9,9 @@ description: >
 prompts:
   - "A surreal landscape with floating islands and purple skies."
   - "An abstract painting of a futuristic city at night."
-  - "A peaceful meadow with a glowing moon in the background."
-  - "A high-tech robot walking through an old forest."
-  - "A mysterious castle floating above the clouds."
 
 styles:
-  random: "A randomly selected style will be randomly selected!"
+  random: "Rando dando, we like Mando!"
   realistic: "Highly detailed, photorealistic rendering, ultra-HD quality."
   fantasy: "Bright colors, ethereal lighting, magical atmosphere."
   cyberpunk: "Neon lights, futuristic city, dark and moody aesthetic."
-  impressionist: "Soft brush strokes, dreamy colors, artistic expression."
-  watercolor: "Gentle pastel shades, soft edges, and fluid transitions."
-  minimalist: "Simple geometric shapes, clean lines, limited color palette."

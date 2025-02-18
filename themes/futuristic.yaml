@@ -15,6 +15,7 @@ prompts:
   - "A mysterious alien landscape with strange flora and fauna."
 
 styles:
+  random: "A randomly selected style will be randomly selected!"
   cyberpunk: "Neon glow, dark cityscape, high-tech aesthetics."
   utopian: "Bright, clean, futuristic design with sleek architecture."
   dystopian: "Dark, gritty atmosphere with post-apocalyptic tones."

@@ -14,6 +14,7 @@ prompts:
   - "Children opening presents on Christmas morning."
 
 styles:
+  random: "A randomly selected style will be randomly selected!"
   traditional: "Classic holiday colors, warm lighting, nostalgic feel."
   modern: "Minimalist decorations, elegant silver and blue tones."
   whimsical: "Cartoonish, exaggerated holiday elements, playful atmosphere."
