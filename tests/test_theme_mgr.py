@@ -6,22 +6,10 @@ from Theme import Theme
 from ThemeMgr import ThemeMgr
 
 TEST_THEME_DIR_REL_PATH = 'test_themes'
-
-
-# @pytest.fixture
-# def theme_dir(tmp_path):
-#     """Fixture to create a temporary theme directory for testing."""
-#     return str(tmp_path)
-# 
-# # 
-# def test_theme_mgr_initialization(theme_dir):
-#     """Test ThemeMgr initialization and default theme creation."""
-#     _ = ThemeMgr(theme_dir)
-#     assert os.path.exists(os.path.join(theme_dir, "default.yaml"))
-# 
+CONFIG_FILE_NAME = 'test_config.json'
 
 @pytest.fixture
-def theme_dir():
+def theme_test_setup():
     # setup
     print(f"Testing {TEST_THEME_DIR_REL_PATH} in {os.getcwd()}")
     assert os.path.exists(TEST_THEME_DIR_REL_PATH)
@@ -33,11 +21,11 @@ def theme_dir():
         os.remove(TEST_THEME_DIR_REL_PATH + "/delete_me.yaml")
 
 
-def test_get_theme_list(theme_dir):
+def test_get_theme_list(theme_test_setup):
     """Test retrieval of theme list."""
-    mgr = ThemeMgr(theme_dir)
+    mgr = ThemeMgr(theme_test_setup)
     assert "default" in mgr.get_theme_list()
-    assert "test_theme" in mgr.get_theme_list()
+    assert "creative" in mgr.get_theme_list()
 
     # Add a new theme
     new_theme = Theme(
@@ -53,19 +41,19 @@ def test_get_theme_list(theme_dir):
     assert "delete_me" in mgr.get_theme_list()
 
 
-def test_get_theme(theme_dir):
+def test_get_theme(theme_test_setup):
     """Test retrieving an existing theme."""
-    mgr = ThemeMgr(theme_dir)
+    mgr = ThemeMgr(theme_test_setup)
     theme = mgr.get_theme("default")
     assert isinstance(theme, Theme)
     assert theme.disk_name == "default.yaml"
 
 
-def test_write_theme(theme_dir):
+def test_write_theme(theme_test_setup):
     """Test writing a new theme to file."""
-    mgr = ThemeMgr(theme_dir)
+    mgr = ThemeMgr(theme_test_setup)
     new_theme = Theme(
-        disk_name="new_theme.yaml",
+        disk_name="delete_me.yaml",
         display_name="New Theme",
         description="A newly added theme.",
         system_prompt="AI creative mode.",
@@ -75,14 +63,14 @@ def test_write_theme(theme_dir):
     )
     mgr.write_theme(new_theme)
 
-    assert os.path.exists(os.path.join(theme_dir, "new_theme.yaml"))
-    saved_theme = mgr.get_theme("new_theme")
+    assert os.path.exists(os.path.join(theme_test_setup, "delete_me.yaml"))
+    saved_theme = mgr.get_theme("delete_me")
     assert saved_theme.display_name == "New Theme"
 
 
-def test_delete_theme(theme_dir):
+def test_delete_theme(theme_test_setup):
     """Test deleting a theme."""
-    mgr = ThemeMgr(theme_dir)
+    mgr = ThemeMgr(theme_test_setup)
     mgr.delete_theme("default")
     assert "default" not in mgr.get_theme_list()
 

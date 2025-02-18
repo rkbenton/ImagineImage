@@ -1,6 +1,28 @@
 import pytest
 
 from Theme import Theme
+import os
+
+import pytest
+
+from Theme import Theme
+from ThemeMgr import ThemeMgr
+
+TEST_THEME_DIR_REL_PATH = 'test_themes'
+
+@pytest.fixture
+def theme_dir():
+    # setup
+    print(f"Testing {TEST_THEME_DIR_REL_PATH} in {os.getcwd()}")
+    assert os.path.exists(TEST_THEME_DIR_REL_PATH)
+
+    # do the test with this...
+    yield TEST_THEME_DIR_REL_PATH
+
+    # cleanup
+    if os.path.exists(TEST_THEME_DIR_REL_PATH + "/delete_me.yaml"):
+        print(f"Deleting {TEST_THEME_DIR_REL_PATH}/delete_me.yaml")
+        os.remove(TEST_THEME_DIR_REL_PATH + "/delete_me.yaml")
 
 
 def test_theme_initialization():
@@ -21,6 +43,8 @@ def test_theme_initialization():
     assert theme.user_prompt == "Modify: \"{prompt}\"."
     assert theme.prompts == ["Test prompt 1", "Test prompt 2"]
     assert theme.styles == {"style1": "Description 1", "style2": "Description 2"}
+
+
 
 
 def test_theme_empty_prompts():
