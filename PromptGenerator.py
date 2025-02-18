@@ -23,13 +23,11 @@ class PromptGenerator:
         self.config = self.config_mgr.load_config()
         self.theme_mgr = ThemeMgr(self.config["themes_directory"])
         if api_key:
-            self.api_key = api_key
             self.client = OpenAI(api_key=api_key)
         else:
-            self.api_key = None
             self.client = None
 
-    def embellish_prompt(self, user_prompt: str, system_prompt: str):
+    def embellish_prompt(self, user_prompt: str, system_prompt: str) -> str:
         """
         Enhances the given user prompt using an AI model (GPT-4o-mini).
         You will typically call generate_prompt() first.
