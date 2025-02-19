@@ -33,22 +33,26 @@ class ConfigMgr:
             "full_screen": True,
             "custom_prompt": "",
             "embellish_custom_prompt": True,
-            "max_num_saved_files": 200,
+            "max_num_saved_files": 250,  # per directory
             "save_directory_path": "image_out",
             "background_color": [0, 0, 0],
             "active_theme": ConfigMgr.DEFAULT_THEME_NAME,
             "active_style": ConfigMgr.DEFAULT_STYLE_NAME,
-            "themes_directory": ConfigMgr.DEFAULT_THEMES_DIR_NAME
+            "themes_directory": ConfigMgr.DEFAULT_THEMES_DIR_NAME,
         }
 
+        # Write the config file if one does not exist
         if not self.config_file_path.exists():
             with self.config_file_path.open("w", encoding="utf-8") as file:
                 json.dump(default_config, file, indent=4)  # type: ignore
 
+        # Merge with default values to include missing keys
         with self.config_file_path.open("r", encoding="utf-8") as file:
-            # Merge with default values to include missing keys
             the_data = json.load(file)
             loaded_config = {**default_config, **the_data}
+
+        # Write the file to ensure all new data is on file
+        self.save_config(config=loaded_config)
 
         # Ensure themes directory exists
         themes_dir = Path(loaded_config["themes_directory"])
