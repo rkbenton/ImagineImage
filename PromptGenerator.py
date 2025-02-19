@@ -1,18 +1,18 @@
-import os
 import random
+
+from openai import OpenAI
 
 from ConfigMgr import ConfigMgr
 from SimplePromptGenerator import SimplePromptGenerator
 from Theme import Theme
 from ThemeMgr import ThemeMgr
 
-from openai import OpenAI
 
 class PromptGenerator:
     FULL_PROMPT = 'full_prompt'
     SYSTEM_PROMPT = 'system_prompt'
 
-    def __init__(self, config_mgr: ConfigMgr, api_key:str = None) -> None:
+    def __init__(self, config_mgr: ConfigMgr, api_key: str = None) -> None:
         """
         Initializes the PromptGenerator with configuration and OpenAI API client.
         :param config_mgr: ConfigMgr instance
@@ -26,6 +26,13 @@ class PromptGenerator:
             self.client = OpenAI(api_key=api_key)
         else:
             self.client = None
+        self.most_recent_theme_used: str | None = None
+
+    def get_theme_name(self) -> str | None:
+        """Answers the burning question: What theme was used in generating
+        the most recent image? Useful when writing image and prompt to a
+        thematic output directory."""
+        return self.most_recent_theme_used
 
     def embellish_prompt(self, user_prompt: str, system_prompt: str) -> str:
         """
@@ -69,8 +76,8 @@ class PromptGenerator:
         Returns: dictionary of prompt data; keys are "full_prompt", and "system_prompt"
         """
         self.config = self.config_mgr.load_config()
-        active_theme_name = self.config["active_theme"]
-        theme_data: Theme = self.theme_mgr.get_theme(active_theme_name)
+        self.most_recent_theme_used = self.config["active_theme"]
+        theme_data: Theme = self.theme_mgr.get_theme(self.most_recent_theme_used)
 
         system_prompt: str = theme_data.system_prompt
         user_prompt_template: str = theme_data.user_prompt
