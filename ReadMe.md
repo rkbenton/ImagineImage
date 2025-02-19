@@ -132,3 +132,13 @@ watch -n 1 vcgencmd measure_temp
 
 <img style="display: block; margin: 0 auto;width:400px;" src="docs/read_me_bottom_image.png" alt="drawing"/>
 
+# Capturing Git Logs
+For convenience, I note here an easy way to get a simple list of git commit messages
+from some date to now: 
+```bash
+git log --after="2025-2-18"  --oneline > git_log.txt
+```
+You can then upload `git_log.txt` to, say, ChatGPT and then tell it to:
+```
+create a reasonable changelog from these git commits; produce the results using markdown format
+```
