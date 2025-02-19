@@ -3,6 +3,7 @@
 
 # program output
 image_out/
+git_log.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
