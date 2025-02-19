@@ -1,14 +1,16 @@
 import json  # JSON library for configuration handling
-from pathlib import Path
 import tkinter as tk  # Tkinter for GUI and configuration dialog
 import tkinter.messagebox
+from pathlib import Path
 
 
 class ConfigMgr:
     DEFAULT_DISPLAY_DURATION: str = "01:00:00"  # every hour
-    DEFAULT_THEME_NAME: str = "creative"
-    DEFAULT_STYLE_NAME: str = "Random"
-    DEFAULT_THEMES_DIR_NAME: str = "themes"
+    # DEFAULT_THEME_NAME: str = "creative"
+    # DEFAULT_STYLE_NAME: str = "random"
+    # DEFAULT_THEMES_DIR_NAME: str = "themes"
+
+    FACTORY_CONFIG_FILE_NAME: str = "factory_config.json"
 
     def __init__(self, config_file_name: str = "app_config.json"):
         self.config_file_path: Path = Path(config_file_name)
@@ -24,22 +26,32 @@ class ConfigMgr:
         except ValueError:
             return False
 
-    def load_config(self):
+    def read_factory_config(self) -> dict:
         """
-        Loads configuration settings from a JSON file. If the file does not exist, creates it with default values.
+        Read the factory default file.
         """
-        default_config = {
-            "display_duration": ConfigMgr.DEFAULT_DISPLAY_DURATION,
-            "full_screen": True,
-            "custom_prompt": "",
-            "embellish_custom_prompt": True,
-            "max_num_saved_files": 250,  # per directory
-            "save_directory_path": "image_out",
-            "background_color": [0, 0, 0],
-            "active_theme": ConfigMgr.DEFAULT_THEME_NAME,
-            "active_style": ConfigMgr.DEFAULT_STYLE_NAME,
-            "themes_directory": ConfigMgr.DEFAULT_THEMES_DIR_NAME,
-        }
+        factory_config_file_path: Path = Path(self.FACTORY_CONFIG_FILE_NAME)
+        with factory_config_file_path.open("r", encoding="utf-8") as file:
+            the_data = json.load(file)
+            loaded_config = {**the_data}
+        return loaded_config
+
+    def reset_to_factory_defaults(self):
+        fconfig = self.read_factory_config()
+        self.save_config(fconfig)
+
+    def load_config(self) -> dict:
+        """
+        Load the app's configuration.
+        - read in the factory_config.json default file
+        - if app_config.json doesn't exist, write it using factory_config.json
+        - read in the app_config.json file
+            - merge in any new values found in factory_config.json
+        - write the app_config.json file
+        - ensure themes and image_out directories exist
+        :return: a dictionary containing the configuration data
+        """
+        default_config = self.read_factory_config()
 
         # Write the config file if one does not exist
         if not self.config_file_path.exists():
@@ -155,7 +167,7 @@ class ConfigMgr:
         dir_frame.pack(fill=tk.X)
         tk.Entry(dir_frame, textvariable=save_dir_var).pack(side=tk.LEFT, fill=tk.X, expand=True)
         tk.Button(dir_frame, text="Browse", command=lambda: save_dir_var.set(
-            tk.filedialog.askdirectory(initialdir=save_dir_var.get())
+            tk.filedialog.askdirectory(initialdir=save_dir_var.get())  # type: ignore
         )).pack(side=tk.RIGHT)
 
         # Background Color
