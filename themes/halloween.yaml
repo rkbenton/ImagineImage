@@ -5,7 +5,7 @@ system_prompt: "You are an AI expert in spooky and atmospheric Halloween imagery
 user_prompt: "Original prompt: \"{prompt}\"\nMake it more eerie, mysterious, and immersive."
 
 description: >
-  A haunting and fun theme celebrating the spirit of Halloween.
+  A haunting theme celebrating the spirit of Halloween.
 
 prompts:
   - "A haunted house on a hill under a full moon."
@@ -13,6 +13,36 @@ prompts:
   - "A witch flying on a broomstick across a cloudy night sky."
   - "A spooky graveyard with mist rolling over the tombstones."
   - "A group of children trick-or-treating in elaborate costumes."
+  - "A creepy scarecrow standing in a foggy cornfield at midnight."
+  - "A black cat with glowing eyes sitting on a crooked fence."
+  - "A vampire castle perched atop a stormy cliff, illuminated by lightning."
+  - "A pack of werewolves howling at a massive blood-red moon."
+  - "A ghostly figure wandering through an abandoned, decaying mansion."
+  - "A mysterious potion bubbling in a witch’s cauldron."
+  - "A cursed mirror reflecting a sinister shadow not in the room."
+  - "A demonic jack-o'-lantern with fiery eyes and a wicked grin."
+  - "A swarm of bats flying out of an old, crumbling cathedral."
+  - "A spooky carnival with eerie rides and sinister clowns."
+  - "A possessed doll sitting eerily in the corner of a dark room."
+  - "A skeleton playing a violin in a moonlit graveyard."
+  - "A ghostly carriage drawn by spectral horses through the fog."
+  - "A haunted forest where the trees have twisted, grasping hands."
+  - "A headless horseman galloping through a darkened village."
+  - "A spectral banquet where ghosts feast in an ancient mansion."
+  - "A mad scientist’s lab filled with bubbling potions and crackling electricity."
+  - "A haunted mirror showing a different reflection than the person looking into it."
+  - "A mysterious door in an old house that only appears on Halloween night."
+  - "A group of children discovering a hidden, cursed graveyard."
+  - "A scarecrow coming to life under the eerie glow of a harvest moon."
+  - "A haunted shipwreck deep beneath the ocean, still glowing with ghostly lanterns."
+  - "A glowing, enchanted pumpkin floating in a magical forest."
+  - "A haunted asylum with whispers echoing through the empty halls."
+  - "A Victorian séance where spirits begin to manifest in the candlelight."
+  - "A shadowy figure standing at the end of a darkened street, never moving."
+  - "A mansion with windows that seem to follow passersby."
+  - "A monstrous creature rising from the depths of a foggy swamp."
+  - "A cursed carnival ride that never stops spinning, filled with ghostly laughter."
+  - "A group of witches performing a ritual in the middle of a dark forest."
 
 styles:
   random: "A randomly selected style will be randomly selected!"
