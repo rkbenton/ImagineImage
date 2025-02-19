@@ -4,7 +4,7 @@ Module: image_generator.py
 This module defines a class `ImageGenerator` that generates images using OpenAI's DALL·E model.
 It constructs prompts from the `PromptGenerator` and fetches images accordingly.
 """
-
+import os.path
 from datetime import datetime
 from io import BytesIO
 from pathlib import Path
@@ -70,13 +70,14 @@ class ImageGenerator:
         return img
 
     def generate_image(self, port_xy: tuple[int, int] = (1024, 1024),
-                       image_directory: str = "image_out") -> Path | None:
+                       output_dir: str = "image_out") -> [Path, Path]:
         """
         Generates an image and saves it to the specified directory.
 
         :param port_xy: The size of the target viewport (width, height).
-        :param image_directory: The directory where the image will be saved.
-        :return: Path to the generated image file or None on error.
+        :param output_dir: The directory where output data is saved.
+        :return: 2-part tuple; first part is the Path to the generated image
+        file or None on error; second part is the Path to the saved prompt.
         """
         # Generate local prompt data
         prompt_data: dict[str, str] = self.prompt_generator.generate_prompt()
@@ -92,10 +93,19 @@ class ImageGenerator:
             print("Image generation failed")
             return None
 
+        # theme_name is used to name a subdirectory of image_out where the images
+        # and prompts will be saved; this should be the name of the theme that
+        # was used when developing the image prompt. e.g. "creative".
+        theme_name = self.prompt_generator.get_theme_name()
+        if theme_name is not None and theme_name != "":
+            # add theme to output dir, e.g. "image_out/creative"
+            output_dir = os.path.join(output_dir, theme_name)
+            os.makedirs(output_dir, exist_ok=True)
+
         # Save image and prompt to disk, prefixing with timestamp
         formatted_date = datetime.now().strftime("%Y%m%dT%H%M%S")
-        img_path = Path(image_directory, f"{formatted_date}_output_image.png")
-        prompt_path = Path(image_directory, f"{formatted_date}_prompt.txt")
+        img_path = Path(output_dir, f"{formatted_date}_output_image.png")
+        prompt_path = Path(output_dir, f"{formatted_date}_prompt.txt")
 
         # Save image as PNG
         try:
@@ -111,4 +121,4 @@ class ImageGenerator:
         except IOError as e:
             print(f"Error writing prompt to file {prompt_path}: {e}")
 
-        return img_path
+        return img_path, prompt_path
