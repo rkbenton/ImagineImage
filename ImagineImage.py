@@ -139,7 +139,8 @@ class ImagineImage:
 
     def main(self):
         """
-        Main function that initializes the display window, loads configuration, and shows images sequentially.
+        Main function that initializes the display window, loads configuration,
+        generates and shows images.
         """
         config_mgr = ConfigMgr()
         self.config = config_mgr.load_config()
@@ -169,18 +170,29 @@ class ImagineImage:
                 # purge older files from image_out
                 self.delete_oldest_files(self.config["save_directory_path"], int(self.config["max_num_saved_files"]))
                 # generate random prompt and use it to generate an image
-                # then write it to disk
-                current_image_path: Path = self.image_generator.generate_image(screen_xy, save_dir_path)
-                print(f"New image from disk at {str(current_image_path)}")
-                if current_image_path is not None:
-                    # send the image to S3
-                    self.s3_manager.upload_to_s3(current_image_path)
-                    # read the new image off disk
-                    current_image = self.get_image_from_disk(current_image_path)
+                # then write image and prompt to disk
+                output_file_info: [Path, Path] = self.image_generator.generate_image(screen_xy, save_dir_path)
+                image_path: Path = output_file_info[0]
+                prompt_path: Path = output_file_info[1]
+                print(f"New image from disk at {str(image_path)}")
+                if image_path is not None:
+                    # send the image + prompt to S3 using a key of the theme + filename
+                    # note: AWS S3 keys require forward slashes
+                    # -- image --
+                    s3_key = f"{self.prompt_generator.get_theme_name()}/{os.path.basename(image_path)}"
+                    print(f"Saving image to S3 at {s3_key}")
+                    self.s3_manager.upload_to_s3(image_path, s3_key)
+                    # -- prompt --
+                    s3_key = f"{self.prompt_generator.get_theme_name()}/{os.path.basename(prompt_path)}"
+                    print(f"Saving image to S3 at {s3_key}")
+                    self.s3_manager.upload_to_s3(prompt_path, s3_key)
+
+                    # read the new image off disk and display on screen
+                    current_image = self.get_image_from_disk(image_path)
                     if current_image is not None:
                         self.display_image(current_image)
                 # reset time in all cases so we don't flood AI services
-                last_image_time = time.time() # secs since epoch
+                last_image_time = time.time()  # secs since epoch
 
             key = cv.waitKey(250)  # Wait for key press
 

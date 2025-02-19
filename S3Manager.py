@@ -18,19 +18,20 @@ class S3Manager(object):
         """
         self.s3 = boto3.client("s3")  # Initialize an S3 client using boto3
 
-    def upload_to_s3(self, file_path):
+    def upload_to_s3(self, file_path, s3_key:str):
         """
         Uploads a given file to the specified S3 bucket.
 
         :param file_path: Path to the image file that needs to be uploaded.
+        :param s3_key: S3 key to upload the file to, similar to a file path,
+        e.g. "halloween/20250201T112210 output_image.png"
         :return: None
         """
         file_name = os.path.basename(file_path)  # Extract just the filename from the full path
 
         try:
-            # Attempt to upload the file to S3
-            self.s3.upload_file(file_path, self.S3_BUCKET, file_name)
-            print(f"✅ Uploaded {file_name} to S3 bucket: {self.S3_BUCKET}")
+            self.s3.upload_file(file_path, self.S3_BUCKET, s3_key)
+            print(f"✅ Uploaded {file_name} to S3 bucket: {self.S3_BUCKET+'/'+s3_key}")
         except Exception as e:
             # Handle any errors that occur during the upload process
             print(f"❌ Upload to S3 failed: {e}")
