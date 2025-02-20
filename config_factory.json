@@ -8,6 +8,7 @@
         0,
         0
     ],
+    "local_files_only": false,
     "active_theme": "creative",
     "active_style": "random",
     "themes_directory": "themes"

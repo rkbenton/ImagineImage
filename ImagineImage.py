@@ -84,7 +84,7 @@ class ImagineImage:
         Get a random image from the image directory if there is one.
         return: cv2 image or None
         """
-        image_dir = Path(self.config["save_directory_path"])
+        image_dir = Path(self.config["save_directory_path"]) / self.config["active_theme"]
         cv2_img = None
         if not (image_dir.exists() and image_dir.is_dir()):
             print(f"{image_dir} not found.")
@@ -166,31 +166,37 @@ class ImagineImage:
         while True:
             if time.time() - last_image_time >= min_display_duration or current_image is None:
                 print("Timer expired; getting new image.")
-                screen_xy = (self.tk_root.winfo_screenwidth(), self.tk_root.winfo_screenheight())
+                self.config = config_mgr.load_config()
                 # purge older files from image_out
                 self.delete_oldest_files(self.config["save_directory_path"], int(self.config["max_num_saved_files"]))
-                # generate random prompt and use it to generate an image
-                # then write image and prompt to disk
-                output_file_info: [Path, Path] = self.image_generator.generate_image(screen_xy, save_dir_path)
-                image_path: Path = output_file_info[0]
-                prompt_path: Path = output_file_info[1]
-                print(f"New image from disk at {str(image_path)}")
-                if image_path is not None:
-                    # send the image + prompt to S3 using a key of the theme + filename
-                    # note: AWS S3 keys require forward slashes
-                    # -- image --
-                    s3_key = f"{self.prompt_generator.get_theme_name()}/{os.path.basename(image_path)}"
-                    print(f"Saving image to S3 at {s3_key}")
-                    self.s3_manager.upload_to_s3(image_path, s3_key)
-                    # -- prompt --
-                    s3_key = f"{self.prompt_generator.get_theme_name()}/{os.path.basename(prompt_path)}"
-                    print(f"Saving image to S3 at {s3_key}")
-                    self.s3_manager.upload_to_s3(prompt_path, s3_key)
 
-                    # read the new image off disk and display on screen
-                    current_image = self.get_image_from_disk(image_path)
-                    if current_image is not None:
-                        self.display_image(current_image)
+                if self.config["local_files_only"]:
+                    current_image: cv2.typing.MatLike = self.get_random_image_from_disk()
+                    self.display_image(current_image)
+                else:
+                    # generate random prompt and use it to generate an image
+                    # then write image and prompt to disk
+                    screen_xy = (self.tk_root.winfo_screenwidth(), self.tk_root.winfo_screenheight())
+                    output_file_info: [Path, Path] = self.image_generator.generate_image(screen_xy, save_dir_path)
+                    image_path: Path = output_file_info[0]
+                    prompt_path: Path = output_file_info[1]
+                    print(f"New image from disk at {str(image_path)}")
+                    if image_path is not None:
+                        # send the image + prompt to S3 using a key of the theme + filename
+                        # note: AWS S3 keys require forward slashes
+                        # -- image --
+                        s3_key = f"{self.prompt_generator.get_theme_name()}/{os.path.basename(image_path)}"
+                        print(f"Saving image to S3 at {s3_key}")
+                        self.s3_manager.upload_to_s3(image_path, s3_key)
+                        # -- prompt --
+                        s3_key = f"{self.prompt_generator.get_theme_name()}/{os.path.basename(prompt_path)}"
+                        print(f"Saving image to S3 at {s3_key}")
+                        self.s3_manager.upload_to_s3(prompt_path, s3_key)
+
+                        # read the new image off disk and display on screen
+                        current_image = self.get_image_from_disk(image_path)
+                        if current_image is not None:
+                            self.display_image(current_image)
                 # reset time in all cases so we don't flood AI services
                 last_image_time = time.time()  # secs since epoch
 
@@ -222,6 +228,7 @@ class ImagineImage:
                 config_mgr.save_config(self.config)
             elif key == ord('o') or key == ord('O'):
                 # Open the options dialog
+                self.config = config_mgr.load_config()
                 config_mgr.show_options_dialog(self.config)
                 min_display_duration = self.parse_display_duration()
 

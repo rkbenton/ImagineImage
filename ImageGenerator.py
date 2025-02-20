@@ -50,7 +50,7 @@ class ImageGenerator:
             response = self.client.images.generate(
                 model="dall-e-3",  # Choose between "dall-e-3" or "dall-e-2"
                 prompt=prompt,
-                size=img_siz,
+                size=img_siz,  # type: ignore
                 quality="standard",  # Options: "hd", "standard"
                 n=1,
             )

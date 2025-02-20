@@ -23,7 +23,6 @@ class ConfigMgr:
 
         last_modified = self.config_file_path.stat().st_mtime
         b = (last_modified - self._last_read_time) > 0.5
-        print(f"$$$ {"YES" if b else "NO"} _is_config_modified; diff: {last_modified - self._last_read_time} ")
         return b
 
     def read_factory_config(self) -> dict:
@@ -53,7 +52,6 @@ class ConfigMgr:
         """
         if self._config_cache and not self._is_config_modified():
             # we'll just use the cached version, then, shall we?
-            print(f"$$$ using cached configuration")
             return self._config_cache
 
         default_config = self.read_factory_config()
@@ -69,7 +67,7 @@ class ConfigMgr:
         with self.config_file_path.open("r", encoding="utf-8") as file:
             the_data = json.load(file)
             loaded_config = {**default_config, **the_data}
-            print(f"$$$ Full Read of config_local.json: {loaded_config}")
+            print(f"Full Read of config_local.json: {loaded_config}")
             self._config_cache = loaded_config
             self._last_read_time = self.config_file_path.stat().st_mtime
 
