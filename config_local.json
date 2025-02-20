@@ -1,11 +1,15 @@
 {
-    "display_duration": "04:00:00",
-    "full_screen": true,
+    "display_duration": "00:00:10",
+    "full_screen": false,
     "custom_prompt": "",
     "embellish_custom_prompt": true,
-    "max_num_saved_files": 201,
+    "max_num_saved_files": 202,
     "save_directory_path": "image_out",
-    "background_color": [0, 0, 0],
+    "background_color": [
+        0,
+        0,
+        0
+    ],
     "active_theme": "creative",
     "active_style": "random",
     "themes_directory": "themes"

@@ -17,7 +17,7 @@ from S3Manager import S3Manager
 
 
 class ImagineImage:
-    CONFIG_FILE = Path("app_config.json")
+    CONFIG_FILE = Path("config_local.json")
     WINDOW_NAME = "Imagine Image"
 
     def __init__(self):

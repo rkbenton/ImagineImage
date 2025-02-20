@@ -8,9 +8,9 @@ from typing import Dict, Any
 class ConfigMgr:
     DEFAULT_DISPLAY_DURATION: str = "01:00:00"  # every hour
 
-    FACTORY_CONFIG_FILE_NAME: str = "factory_config.json"
+    FACTORY_CONFIG_FILE_NAME: str = "config_factory.json"
 
-    def __init__(self, config_file_name: str = "app_config.json"):
+    def __init__(self, config_file_name: str = "config_local.json"):
         self.config_file_path: Path = Path(config_file_name)
         self._config_cache: Dict[str, Any] = {}
         self._last_read_time: float = 0.0  # Stores last read timestamp
@@ -42,11 +42,11 @@ class ConfigMgr:
     def load_config(self) -> dict:
         """
         Load the app's configuration.
-        - read in the factory_config.json default file
-        - if app_config.json doesn't exist, write it using factory_config.json
-        - read in the app_config.json file
-            - merge in any new values found in factory_config.json
-        - write the app_config.json file
+        - read in the config_factory.json default file
+        - if config_local.json doesn't exist, write it using config_factory.json
+        - read in the config_local.json file
+            - merge in any new values found in config_factory.json
+        - write the config_local.json file
         - ensure themes and image_out directories exist
         :return: a dictionary containing the configuration data
         """
@@ -63,12 +63,12 @@ class ConfigMgr:
                 json.dump(default_config, file, indent=4)  # type: ignore
                 print(f"New config file written to: {self.config_file_path}")
 
-        # Read in the app_config.json file.
+        # Read in the config_local.json file.
         # Merge with default values to include any new items
         with self.config_file_path.open("r", encoding="utf-8") as file:
             the_data = json.load(file)
             loaded_config = {**default_config, **the_data}
-            print(f"$$$ Full Read of app_config.json: {loaded_config}")
+            print(f"$$$ Full Read of config_local.json: {loaded_config}")
             self._config_cache = loaded_config
             self._last_read_time = self.config_file_path.stat().st_mtime
 
@@ -92,7 +92,7 @@ class ConfigMgr:
 
     def save_config(self, config: Dict[str, Any]):
         """
-        Saves the current configuration to the app_config.json file.
+        Saves the current configuration to the config_local.json file.
         This will remember when it was written.
         """
         with self.config_file_path.open("w", encoding="utf-8") as file:
