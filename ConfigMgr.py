@@ -2,29 +2,28 @@ import json  # JSON library for configuration handling
 import tkinter as tk  # Tkinter for GUI and configuration dialog
 import tkinter.messagebox
 from pathlib import Path
+from typing import Dict, Any
 
 
 class ConfigMgr:
     DEFAULT_DISPLAY_DURATION: str = "01:00:00"  # every hour
-    # DEFAULT_THEME_NAME: str = "creative"
-    # DEFAULT_STYLE_NAME: str = "random"
-    # DEFAULT_THEMES_DIR_NAME: str = "themes"
 
     FACTORY_CONFIG_FILE_NAME: str = "factory_config.json"
 
     def __init__(self, config_file_name: str = "app_config.json"):
         self.config_file_path: Path = Path(config_file_name)
-        print(f"config_path is a {type(config_file_name)}")
-        print(f"self.config_file_path is a {type(self.config_file_path)}")
+        self._config_cache: Dict[str, Any] = {}
+        self._last_read_time: float = 0.0  # Stores last read timestamp
 
-        print(f"ConfigMgr init. File: {config_file_name}")
+    def _is_config_modified(self) -> bool:
+        """Check if the config file has been modified since the last read."""
+        if not self.config_file_path.exists():
+            return True  # If the file doesn't exist, treat it as modified
 
-    def validate_time_string(self, time_str: str) -> bool:
-        try:
-            hours, minutes, seconds = map(int, time_str.split(':'))
-            return 0 <= hours <= 23 and 0 <= minutes <= 59 and 0 <= seconds <= 59
-        except ValueError:
-            return False
+        last_modified = self.config_file_path.stat().st_mtime
+        b = (last_modified - self._last_read_time) > 0.5
+        print(f"$$$ {"YES" if b else "NO"} _is_config_modified; diff: {last_modified - self._last_read_time} ")
+        return b
 
     def read_factory_config(self) -> dict:
         """
@@ -51,19 +50,30 @@ class ConfigMgr:
         - ensure themes and image_out directories exist
         :return: a dictionary containing the configuration data
         """
+        if self._config_cache and not self._is_config_modified():
+            # we'll just use the cached version, then, shall we?
+            print(f"$$$ using cached configuration")
+            return self._config_cache
+
         default_config = self.read_factory_config()
 
         # Write the config file if one does not exist
         if not self.config_file_path.exists():
             with self.config_file_path.open("w", encoding="utf-8") as file:
                 json.dump(default_config, file, indent=4)  # type: ignore
+                print(f"New config file written to: {self.config_file_path}")
 
-        # Merge with default values to include missing keys
+        # Read in the app_config.json file.
+        # Merge with default values to include any new items
         with self.config_file_path.open("r", encoding="utf-8") as file:
             the_data = json.load(file)
             loaded_config = {**default_config, **the_data}
+            print(f"$$$ Full Read of app_config.json: {loaded_config}")
+            self._config_cache = loaded_config
+            self._last_read_time = self.config_file_path.stat().st_mtime
 
-        # Write the file to ensure all new data is on file
+        # Write the file to ensure all new data is on file,
+        # will update the cached version & last-read-date
         self.save_config(config=loaded_config)
 
         # Ensure themes directory exists
@@ -80,15 +90,25 @@ class ConfigMgr:
 
         return loaded_config
 
-    def save_config(self, config):
+    def save_config(self, config: Dict[str, Any]):
         """
         Saves the current configuration to the app_config.json file.
+        This will remember when it was written.
         """
         with self.config_file_path.open("w", encoding="utf-8") as file:
             json.dump(config, file, indent=4)  # type: ignore
+        self._config_cache = config
+        self._last_read_time = self.config_file_path.stat().st_mtime
 
-    def validate_config_values(self, config_dict):
-        """Validate configuration values"""
+    def validate_time_string(self, time_str: str) -> bool:
+        try:
+            hours, minutes, seconds = map(int, time_str.split(':'))
+            return 0 <= hours <= 23 and 0 <= minutes <= 59 and 0 <= seconds <= 59
+        except ValueError:
+            return False
+
+    def validate_config_values(self, config_dict: Dict[str, Any]) -> None:
+        """Validate configuration values; will raise exception if not valid."""
         errors = []
 
         duration_str: str = config_dict["display_duration"]
