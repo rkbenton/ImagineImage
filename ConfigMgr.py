@@ -8,9 +8,10 @@ from typing import Dict, Any
 class ConfigMgr:
     DEFAULT_DISPLAY_DURATION: str = "01:00:00"  # every hour
 
+    LOCAL_CONFIG_FILE_NAME: str = "config_local.json"
     FACTORY_CONFIG_FILE_NAME: str = "config_factory.json"
 
-    def __init__(self, config_file_name: str = "config_local.json"):
+    def __init__(self, config_file_name: str = LOCAL_CONFIG_FILE_NAME):
         self.config_file_path: Path = Path(config_file_name)
         self._config_cache: Dict[str, Any] = {}
         self._last_read_time: float = 0.0  # Stores last read timestamp

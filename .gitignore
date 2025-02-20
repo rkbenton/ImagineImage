@@ -4,6 +4,7 @@
 # program output
 image_out/
 git_log.txt
+# local configuration
 config_local.json
 
 # Byte-compiled / optimized / DLL files
