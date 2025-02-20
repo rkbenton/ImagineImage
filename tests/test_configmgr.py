@@ -23,8 +23,6 @@ def sample_config():
     return {
         "display_duration": ConfigMgr.DEFAULT_DISPLAY_DURATION,
         "full_screen": True,
-        "custom_prompt": "",
-        "embellish_custom_prompt": True,
         "max_num_saved_files": 200,
         "save_directory_path": "image_out",
         "background_color": [0, 0, 0],
@@ -104,13 +102,13 @@ class TestConfigMgr:
 
     def test_config_file_encoding(self, config_mgr, sample_config):
         """Test config file is saved with UTF-8 encoding"""
-        sample_config["custom_prompt"] = "测试中文"  # Test with non-ASCII characters
+        sample_config["active_theme"] = "测试中文"  # Test with non-ASCII characters
         config_mgr.save_config(sample_config)
 
         # Read the file directly to check encoding
         with config_mgr.config_file_path.open('r', encoding='utf-8') as f:
             loaded_data = json.load(f)
-        assert loaded_data["custom_prompt"] == "测试中文"
+        assert loaded_data["active_theme"] == "测试中文"
 
     def test_default_config_structure(self, config_mgr):
         """Test that all required keys are present in default config"""
@@ -118,8 +116,6 @@ class TestConfigMgr:
         required_keys = {
             "display_duration",
             "full_screen",
-            "custom_prompt",
-            "embellish_custom_prompt",
             "max_num_saved_files",
             "save_directory_path",
             "background_color",

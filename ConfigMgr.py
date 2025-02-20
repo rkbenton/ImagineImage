@@ -167,14 +167,6 @@ class ConfigMgr:
         # Fullscreen
         fullscreen_var = tk.BooleanVar(value=config["full_screen"])
         tk.Checkbutton(main_frame, text="Full Screen", variable=fullscreen_var).pack(anchor=tk.W)
-        # Custom Prompt
-        tk.Label(main_frame, text="Custom Prompt:").pack(anchor=tk.W)
-        prompt_var = tk.StringVar(value=config["custom_prompt"])
-        tk.Entry(main_frame, textvariable=prompt_var).pack(fill=tk.X)
-
-        # Embellish Prompt
-        embellish_var = tk.BooleanVar(value=config["embellish_custom_prompt"])
-        tk.Checkbutton(main_frame, text="Embellish Custom Prompt", variable=embellish_var).pack(anchor=tk.W)
 
         # Max Files
         tk.Label(main_frame, text="Maximum Saved Files:").pack(anchor=tk.W)
@@ -206,8 +198,6 @@ class ConfigMgr:
                 new_config = {
                     "display_duration": duration_var.get(),
                     "full_screen": fullscreen_var.get(),
-                    "custom_prompt": prompt_var.get(),
-                    "embellish_custom_prompt": embellish_var.get(),
                     "max_num_saved_files": int(max_files_var.get()),
                     "save_directory_path": save_dir_var.get(),
                     "background_color": [int(v.get()) for v in color_vars]

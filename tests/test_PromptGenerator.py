@@ -20,8 +20,6 @@ def config_mgr():
     config_data = {
         "display_duration": "01:00:00",
         "full_screen": True,
-        "custom_prompt": "",
-        "embellish_custom_prompt": True,
         "max_num_saved_files": 200,
         "save_directory_path": "image_out",
         "background_color": [0, 0, 0],
