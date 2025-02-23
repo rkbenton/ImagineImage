@@ -174,7 +174,7 @@ class ImagineImage:
         # image is fetched from the AI
         print(f"Initial image from disk at {save_dir_path}")
         current_image: cv2.typing.MatLike = self.get_random_image_from_disk()
-        self.display_image( current_image, self.config["background_color"])
+        self.display_image(current_image, self.config["background_color"])
         _ = cv.waitKey(1000)  # Wait 1 second for the image to display
 
         while True:
