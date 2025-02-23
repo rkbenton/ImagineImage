@@ -41,7 +41,13 @@ The project is [available on GitHub](https://github.com/rkbenton/ImagineImage)
 | `s, S` | Small Window    |
 | `q, Q` | Quit            |
 
----
+
+# Deployment
+Deploying to a Raspberry Pi is rather manual, but not too odious.
+
+See **[RaspiBuildOut.md](docs/RaspiBuildOut.md)** for a detailed guide.
+
+
 # Operational Notes
 
 ## SSH
