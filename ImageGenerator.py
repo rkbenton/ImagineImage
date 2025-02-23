@@ -99,7 +99,8 @@ class ImageGenerator:
         theme_name = self.prompt_generator.get_theme_name()
         if theme_name is not None and theme_name != "":
             # add theme to output dir, e.g. "image_out/creative"
-            output_dir = os.path.join(output_dir, theme_name)
+            theme_dir_name = theme_name.replace(".yaml","")
+            output_dir = os.path.join(output_dir, theme_dir_name)
             os.makedirs(output_dir, exist_ok=True)
 
         # Save image and prompt to disk, prefixing with timestamp

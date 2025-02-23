@@ -21,14 +21,14 @@ def config_mgr(temp_config_file):
 def sample_config():
     """Returns a sample valid configuration"""
     return {
-        "display_duration": ConfigMgr.DEFAULT_DISPLAY_DURATION,
+        "display_duration": "01:00:00",
         "full_screen": True,
-        "max_num_saved_files": 200,
+        "max_num_saved_files": 250,
         "save_directory_path": "image_out",
         "background_color": [0, 0, 0],
-        "active_theme": ConfigMgr.DEFAULT_THEME_NAME,
-        "active_style": ConfigMgr.DEFAULT_STYLE_NAME,
-        "themes_directory": ConfigMgr.DEFAULT_THEMES_DIR_NAME
+        "active_theme": "creative.yaml",
+        "active_style": "random",
+        "themes_directory": "themes"
     }
 
 
@@ -65,10 +65,10 @@ class TestConfigMgr:
         assert config["display_duration"] == ConfigMgr.DEFAULT_DISPLAY_DURATION
         assert config["full_screen"] is True
         assert isinstance(config["max_num_saved_files"], int)
-        assert len(config["background_color"]) == 3
-        assert config["active_theme"] == ConfigMgr.DEFAULT_THEME_NAME
-        assert config["active_style"] == ConfigMgr.DEFAULT_STYLE_NAME
-        assert config["themes_directory"] == ConfigMgr.DEFAULT_THEMES_DIR_NAME
+        assert config["background_color"] == "#000000"
+        assert config["active_theme"] == "creative.yaml"
+        assert config["active_style"] == "random"
+        assert config["themes_directory"] == "themes"
 
     def test_save_and_load_config(self, config_mgr, sample_config):
         """Test saving and loading configuration"""
@@ -121,7 +121,8 @@ class TestConfigMgr:
             "background_color",
             'active_theme',
             'active_style',
-            'themes_directory'
+            'themes_directory',
+            'local_files_only'
         }
         assert set(config.keys()) == required_keys
 

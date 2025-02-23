@@ -84,7 +84,9 @@ class ImagineImage:
         Get a random image from the image directory if there is one.
         return: cv2 image or None
         """
-        image_dir = Path(self.config["save_directory_path"]) / self.config["active_theme"]
+        # config.active_theme is disk_name, e.g. christmas.yaml
+        theme_dir_name = self.config["active_theme"].replace(".yaml", "")
+        image_dir = Path(self.config["save_directory_path"]) / theme_dir_name
         cv2_img = None
         if not (image_dir.exists() and image_dir.is_dir()):
             print(f"{image_dir} not found.")
