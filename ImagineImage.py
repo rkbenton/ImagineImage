@@ -112,7 +112,17 @@ class ImagineImage:
             return None
         return cv2_img
 
-    def display_image(self, cv2_img: cv2.typing.MatLike) -> None:
+    @staticmethod
+    def hex_to_rgb(hex_color: str) -> tuple[int, int, int]:
+        # Remove the '#' if present
+        hex_color = hex_color[1:]
+        # Convert hex to RGB
+        r = int(hex_color[0:2], 16)
+        g = int(hex_color[2:4], 16)
+        b = int(hex_color[4:6], 16)
+        return r, g, b
+
+    def display_image(self, cv2_img: cv2.typing.MatLike, bkgd_hex_color: str = "#000000") -> None:
         """
         Resizes the given cv2 image while maintaining aspect ratio,
         centers it on a black canvas, and displays it in the OpenCV window.
@@ -124,8 +134,9 @@ class ImagineImage:
         screen_width = self.tk_root.winfo_screenwidth()
         screen_height = self.tk_root.winfo_screenheight()
 
-        # create black canvas
-        np_canvas = np.zeros((screen_height, screen_width, 3), dtype=np.uint8)
+        # create canvas
+        r, g, b = ImagineImage.hex_to_rgb(bkgd_hex_color)
+        np_canvas = np.full((screen_height, screen_width, 3), [r, g, b], dtype=np.uint8)
 
         # size the image to fit the canvas
         h, w, _ = cv2_img.shape
@@ -162,7 +173,7 @@ class ImagineImage:
         # image is fetched from the AI
         print(f"Initial image from disk at {save_dir_path}")
         current_image: cv2.typing.MatLike = self.get_random_image_from_disk()
-        self.display_image(current_image)
+        self.display_image( current_image, self.config["background_color"])
         _ = cv.waitKey(1000)  # Wait 1 second for the image to display
 
         while True:
@@ -174,7 +185,7 @@ class ImagineImage:
 
                 if self.config["local_files_only"]:
                     current_image: cv2.typing.MatLike = self.get_random_image_from_disk()
-                    self.display_image(current_image)
+                    self.display_image(current_image, self.config["background_color"])
                 else:
                     # generate random prompt and use it to generate an image
                     # then write image and prompt to disk
@@ -198,7 +209,7 @@ class ImagineImage:
                         # read the new image off disk and display on screen
                         current_image = self.get_image_from_disk(image_path)
                         if current_image is not None:
-                            self.display_image(current_image)
+                            self.display_image(current_image, self.config["background_color"])
                 # reset time in all cases so we don't flood AI services
                 last_image_time = time.time()  # secs since epoch
 
@@ -222,7 +233,7 @@ class ImagineImage:
                 cv.namedWindow(self.WINDOW_NAME, cv.WINDOW_NORMAL)
                 cv.resizeWindow(self.WINDOW_NAME, 640, 480)
                 # Display current image in new window
-                self.display_image(current_image)
+                self.display_image(current_image, self.config["background_color"])
                 cv.waitKey(200)
                 # remember choice in config
                 self.config["full_screen"] = False
