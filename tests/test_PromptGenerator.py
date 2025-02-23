@@ -9,7 +9,7 @@ from PromptGenerator import PromptGenerator
 
 CONFIG_FILE_NAME = "test_app_config.json"
 TEST_THEMES_DIR_NAME = "test_themes"  # Test directory for YAML files
-TEST_THEME_FILE_NAME = "prompt_generator_theme.yaml"
+TEST_THEME_FILE_NAME = "default.yaml"
 
 
 @pytest.fixture
