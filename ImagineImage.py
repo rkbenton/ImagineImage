@@ -134,9 +134,10 @@ class ImagineImage:
         screen_width = self.tk_root.winfo_screenwidth()
         screen_height = self.tk_root.winfo_screenheight()
 
-        # create canvas
+        # create canvas - image will be shown with CV, so the ordering of
+        # the colors is unusual: BGR. OpenCV expects BGR (cv2.imshow will show colors incorrectly).
         r, g, b = ImagineImage.hex_to_rgb(bkgd_hex_color)
-        np_canvas = np.full((screen_height, screen_width, 3), [r, g, b], dtype=np.uint8)
+        np_canvas = np.full((screen_height, screen_width, 3), [b, g, r], dtype=np.uint8)
 
         # size the image to fit the canvas
         h, w, _ = cv2_img.shape
