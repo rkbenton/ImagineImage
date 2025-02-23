@@ -5,8 +5,8 @@ prompts:
 - A serene landscape
 - A futuristic skyline
 styles:
+  random: "A randomly selected style will be randomly selected!"
   classic: Muted tones, soft lighting.
+  minimalist: "Simple geometric shapes, clean lines, limited color palette."
 system_prompt: You are a creative AI.
-user_prompt: 'Original prompt: "{prompt}"
-
-  Make it more artistic and vivid.'
+user_prompt: 'Original prompt: "{prompt}" - Make it more artistic and vivid.'
