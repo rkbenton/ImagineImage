@@ -13,6 +13,93 @@
 - Create systemd service to auto-run the app
 - Configure journalctl logging
 
+
+#### Update everything, all the time, always
+https://www.raspberrypi.com/documentation/computers/os.html#update-software
+```
+sudo apt-get update -y
+sudo apt full-upgrade -y
+sudo apt dist-upgrade -y
+sudo rpi-update
+sudo reboot
+```
+
+#### Setting up SSH for GitHub
+On your Mac:
+Check if you have an rsa key already:
+```
+ls -lha ~/.ssh/id_rsa*
+```
+If not:
+- Run `ssh-keygen -t rsa`
+- `ssh-keygen -t rsa -b 4096 -C "becky@beckybenton.com"`
+- passphrase: **read more books**
+
+you should get back something like:
+```
+Your identification has been saved in /home/becky/.ssh/id_rsa
+Your public key has been saved in /home/becky/.ssh/id_rsa.pub
+```
+Add the SSH Key to Your GitHub Account:
+
+```
+cat ~/.ssh/id_rsa.pub
+```
+- Go to GitHub and log in to your account.
+- In the upper-right corner of any page, click your profile photo, then click Settings.
+- In the user settings sidebar, click SSH and GPG keys.
+- Click New SSH key or Add SSH key.
+- In the "Title" field, add a descriptive label for the new key.
+- Paste your key into the "Key" field.
+- Click Add SSH key.
+
+Test the SSH Connection:
+
+```
+ssh -T git@github.com
+```
+You should see a successful communication with GH!
+
+# Set up AWS creds
+
+```
+mkdir ~/.aws/
+cat << EOF > ~/.aws/credentials
+[default]
+aws_access_key_id = {access key}
+aws_secret_access_key = {secret access key
+EOF
+
+cat << EOF > ~/.aws/config
+[default]
+region=us-east-1
+EOF
+```
+
+# Clone the Repo
+```
+cd ~
+git clone git@github.com:rkbenton/ImagineImage.git
+cd ImagineImage
+ls -lha
+```
+
+### Create Python .venv and pull in dependencies
+
+```bash
+cd ~/ImagineImage
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+# Set up your .env
+```
+nano .env
+```
+and copy in the OpenAPI key.
+
 # Automatically Launching ImagineImage
 It's pretty easy to get the ImagineImage program to run automatically when your Raspberry Pi 5 boots up. This can be done using systemd, which is the standard service manager on modern Linux systems.
 
@@ -133,4 +220,10 @@ SystemMaxUse=100M
 MaxRetentionSec=3days
 ```
 
+# Seed the `image_out` directories
+On your MacBook, copy some images to seed the `image_out` directory on the Raspi
+
+```
+rsync -av /Users/becky/Library/CloudStorage/Dropbox/PythonStuff/ImagineImage/image_out becky@lincoln.local:~/ImagineImage/
+```
 
