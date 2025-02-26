@@ -19,6 +19,7 @@ from S3Manager import S3Manager
 
 class ImagineImage:
     CONFIG_FILE = Path(ConfigMgr.LOCAL_CONFIG_FILE_NAME)
+    RATING_INSTRUCTIONS = "Use numbers 1-5 to rate, ←/→ to navigate, X to exit."
 
     def __init__(self):
         # Initialize TKInter root and create display widgets.
@@ -29,17 +30,21 @@ class ImagineImage:
         # Replace the label with a Canvas that will display both image and overlay text.
         self.image_canvas = tk.Canvas(self.tk_root, highlightthickness=0)
         self.image_canvas.pack(fill=tk.BOTH, expand=True)
+        self.image_id = None
 
         # Create an overlay text item on the canvas.
         # This text item can be updated later via itemconfig().
-        self.info_text_id = self.image_canvas.create_text(
+        self.info_text_id: int = self.image_canvas.create_text(
             10, 10,  # x, y position (top-left corner)
-            width=self.tk_root.winfo_width(),
+            width=self.image_canvas.winfo_width() - 20,  # initial width (will update)
             anchor="nw",
             text="Normal Mode:\nPress 'r' to enter rating mode.",
             fill="white",
             font=("Helvetica", 12)
         )
+
+        # Bind the canvas's configuration changes to update the overlay's size.
+        self.image_canvas.bind("<Configure>", self.on_canvas_configure)
 
         self.config = None
         self.config_mgr = ConfigMgr()
@@ -84,6 +89,16 @@ class ImagineImage:
                 logger.info(f"Deleted: {file}")
             except Exception as e:
                 logger.warn(f"Failed to delete {file}: {e}")
+
+    def on_canvas_configure(self, event):
+        """
+        Callback for when the canvas is resized.
+        Update the overlay rectangle and text width so that they span the width of the canvas.
+        """
+        # Determine a suitable height for the overlay background (e.g., 30 pixels).
+        overlay_height = 30
+        # Update the text item to have a width a little less than the full canvas width.
+        self.image_canvas.itemconfig(self.info_text_id, width=event.width - 20)
 
     def scale_image_to_fit_screen(self, screen_w: int, screen_h: int, img_w: int, img_h: int) -> tuple[int, int]:
         scale = min(screen_w / img_w, screen_h / img_h)
@@ -154,10 +169,10 @@ class ImagineImage:
         self.current_tk_image = tk_image  # Save a reference to prevent garbage collection.
 
         # Update or create the image item on the canvas.
-        if hasattr(self, "image_id"):
-            self.image_canvas.itemconfig(self.image_id, image=tk_image)
-        else:
+        if self.image_id is None:
             self.image_id = self.image_canvas.create_image(0, 0, anchor="nw", image=tk_image)
+        else:
+            self.image_canvas.itemconfig(self.image_id, image=tk_image)
 
         # Ensure the overlay text remains on top.
         self.image_canvas.tag_raise(self.info_text_id)
@@ -173,13 +188,15 @@ class ImagineImage:
             return
 
         if self.last_image_time is None:
-            # grab a random image and display it immediately so we don't have a blank screen
-            logger.info("Setting up first image")
-            self.current_image = self.get_random_image_from_disk()
-            self.display_image_tk(self.current_image, self.config["background_color"])
             self.last_image_time = time.time() - 86400  # force immediate update
-            self.tk_root.after(500, self.update_image)
-            return
+            if not self.config["local_files_only"]:
+                # grab a random image and display it immediately so we don't have a blank screen
+                # while we generate a new prompt and a new image
+                logger.info("Setting up first image")
+                self.current_image = self.get_random_image_from_disk()
+                self.display_image_tk(self.current_image, self.config["background_color"])
+                self.tk_root.after(500, self.update_image)
+                return
 
         min_display_duration = self.parse_display_duration()
         now = time.time()
@@ -222,20 +239,25 @@ class ImagineImage:
         theme_dir = self.config["active_theme"].replace(".yaml", "")
         image_dir = str(Path(self.config["save_directory_path"]) / theme_dir)
         self.rating_manager.start_rating(image_dir)
+        num_to_rate = self.rating_manager.num_remaining_to_rate()
+
         self.image_canvas.itemconfig(self.info_text_id,
-                                     text="Rating Mode: Use numbers 1-5 to rate, ←/→ to navigate, Q to exit rating mode.")
+                                     text=f"Rating Mode:\n{self.RATING_INSTRUCTIONS}"
+                                          f"\nThere are {num_to_rate} images to rate")
         self.update_rating_display()
 
     def exit_rating_mode(self):
         """Exit rating mode and return to normal mode."""
         self.rating_mode = False
         self.rating_manager = None
-        self.image_canvas.itemconfig(self.info_text_id, text="Normal Mode: Press 'r' to enter rating mode.")
+        self.image_canvas.itemconfig(self.info_text_id, text="")
 
     def update_rating_display(self):
         """Update the display to show the current rating image and info from RatingManager."""
         if self.rating_manager is None or not self.rating_manager.rating_list:
-            self.image_canvas.itemconfig(self.info_text_id, text="Rating Mode: No images to rate.")
+            self.image_canvas.itemconfig(self.info_text_id,
+                                         text="Rating Mode: No images to rate.\n"
+                                              "Hit X to exit.")
             return
 
         current_file = self.rating_manager.rating_list[self.rating_manager.current_index]
@@ -245,20 +267,15 @@ class ImagineImage:
 
         # Update the info label with filename and current rating (if any).
         filename = Path(current_file).name
-        import re
-        rating_text = ""
-        m = re.search(r" r\[(\d\.\d)\]", filename)
-        if m:
-            rating_text = f" Rating: {m.group(1)}"
+        num_to_rate = self.rating_manager.num_remaining_to_rate()
         info = (
-            f"Rating Mode - {filename}{rating_text} : "
-            "Use numbers 1-5 to rate, ←/→ to navigate, Q to exit."
+            f"Rating Mode\n{self.RATING_INSTRUCTIONS}\nFile: {filename}\nThere are {num_to_rate} images to rate"
         )
         self.image_canvas.itemconfig(self.info_text_id, text=info)
 
     def on_key(self, event):
         key = event.keysym.lower()
-        logger.info(f"got key: '{key}'; we are {"" if self.rating_mode else 'not '} in rating mode.")
+        logger.info(f"got key: '{key}'")
         if self.rating_mode:
             # In rating mode, process rating and navigation keys.
             if key in ['1', '2', '3', '4', '5']:
