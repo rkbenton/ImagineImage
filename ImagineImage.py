@@ -17,13 +17,25 @@ class ImagineImage:
     CONFIG_FILE = Path(ConfigMgr.LOCAL_CONFIG_FILE_NAME)
 
     def __init__(self):
-        # Initialize TKInter root
+        # Initialize TKInter root and create display widgets.
         self.tk_root = tk.Tk()
         self.tk_root.title("Imagine Image")
         self.tk_root.geometry("800x600")
-        # Create a label to display the image
-        self.tk_label = tk.Label(self.tk_root)
-        self.tk_label.pack(fill=tk.BOTH, expand=True)
+
+        # Replace the label with a Canvas that will display both image and overlay text.
+        self.image_canvas = tk.Canvas(self.tk_root, highlightthickness=0)
+        self.image_canvas.pack(fill=tk.BOTH, expand=True)
+
+        # Create an overlay text item on the canvas.
+        # This text item can be updated later via itemconfig().
+        self.info_text_id = self.image_canvas.create_text(
+            10, 10,  # x, y position (top-left corner)
+            width=self.tk_root.winfo_width(),
+            anchor="nw",
+            text="Normal Mode:\nPress 'r' to enter rating mode.",
+            fill="white",
+            font=("Helvetica", 12)
+        )
 
         self.config = None
         self.config_mgr = ConfigMgr()
@@ -109,8 +121,10 @@ class ImagineImage:
 
         # Force update to get the current dimensions of the label widget.
         self.tk_root.update_idletasks()
-        window_width = self.tk_label.winfo_width()
-        window_height = self.tk_label.winfo_height()
+        canvas_width = self.image_canvas.winfo_width()
+        canvas_height = self.image_canvas.winfo_height()
+        if canvas_width <= 1 or canvas_height <= 1:
+            canvas_width, canvas_height = 800, 600
 
         # If the label hasn't been rendered yet, fallback to the root dimensions or defaults.
         if window_width <= 1 or window_height <= 1:
@@ -140,28 +154,14 @@ class ImagineImage:
         self.tk_label.config(image=tk_image)
         self.tk_label.image = tk_image  # Keep a reference.
 
-    def on_key(self, event):
-        """
-        Handle key events:
-          - 'q': quit
-          - 'f': fullscreen
-          - 's': windowed mode
-          - 'o': open options dialog
-        """
-        key = event.keysym.lower()
-        if key == 'q':
-            self.tk_root.quit()
-        elif key == 'f':
-            self.tk_root.attributes("-fullscreen", True)
-            self.config["full_screen"] = True
-            self.config_mgr.save_config(self.config)
-        elif key == 's':
-            self.tk_root.attributes("-fullscreen", False)
-            self.config["full_screen"] = False
-            self.config_mgr.save_config(self.config)
-        elif key == 'o':
-            self.config = self.config_mgr.load_config()
-            self.config_mgr.show_options_dialog(self.config)
+        # Update or create the image item on the canvas.
+        if hasattr(self, "image_id"):
+            self.image_canvas.itemconfig(self.image_id, image=tk_image)
+        else:
+            self.image_id = self.image_canvas.create_image(0, 0, anchor="nw", image=tk_image)
+
+        # Ensure the overlay text remains on top.
+        self.image_canvas.tag_raise(self.info_text_id)
 
     def update_image(self):
         """
