@@ -1,5 +1,6 @@
-import boto3
 import os
+
+import boto3
 
 
 class S3Manager(object):
@@ -18,7 +19,7 @@ class S3Manager(object):
         """
         self.s3 = boto3.client("s3")  # Initialize an S3 client using boto3
 
-    def upload_to_s3(self, file_path, s3_key:str):
+    def upload_to_s3(self, file_path, s3_key: str):
         """
         Uploads a given file to the specified S3 bucket.
 
@@ -31,7 +32,7 @@ class S3Manager(object):
 
         try:
             self.s3.upload_file(file_path, self.S3_BUCKET, s3_key)
-            print(f"✅ Uploaded {file_name} to S3 bucket: {self.S3_BUCKET+'/'+s3_key}")
+            print(f"✅ Uploaded {file_name} to S3 bucket: {self.S3_BUCKET + '/' + s3_key}")
         except Exception as e:
             # Handle any errors that occur during the upload process
             print(f"❌ Upload to S3 failed: {e}")
@@ -78,3 +79,32 @@ class S3Manager(object):
         except Exception as e:
             print(f"❌ Failed to list files from S3: {e}")
             return []
+
+    def is_in_s3(self, s3_prefix: str, filename: str) -> bool:
+        cur_key = f"{s3_prefix}/{filename}"
+        try:
+            # Attempt to get metadata to check if the object exists
+            self.s3.head_object(Bucket=self.S3_BUCKET, Key=cur_key)
+            return True
+        except self.s3.exceptions.ClientError as e:
+            return False
+
+    def change_name_in_cloud(self, s3_prefix: str, cur_filename: str, new_filename: str):
+        """
+        Change the name (key) of a file in S3 from cur_key to new_key.
+        Raises an exception if the file does not exist in S3.
+        """
+        cur_key = f"{s3_prefix}/{cur_filename}"
+        new_key = f"{s3_prefix}/{new_filename}"
+        print(f"S3: changing name from {cur_key} to {new_key}r4")
+        try:
+            # Check if the object exists
+            self.s3.head_object(Bucket=self.S3_BUCKET, Key=cur_key)
+        except self.s3.exceptions.ClientError as e:
+            raise Exception(f"S3 file with key '{cur_key}' does not exist.") from e
+
+        # Copy the object to the new key
+        copy_source = {'Bucket': self.S3_BUCKET, 'Key': cur_key}
+        self.s3.copy_object(Bucket=self.S3_BUCKET, CopySource=copy_source, Key=new_key)
+        # Delete the old object
+        self.s3.delete_object(Bucket=self.S3_BUCKET, Key=cur_key)
