@@ -1,17 +1,20 @@
+import argparse
+import logging
 import os
 import random
 import sys
 import time
 import tkinter as tk
 from pathlib import Path
+
 from PIL import Image, ImageTk
 from dotenv import load_dotenv
 
 from ConfigMgr import ConfigMgr
 from ImageGenerator import ImageGenerator
 from PromptGenerator import PromptGenerator
-from S3Manager import S3Manager
 from RatingManager import RatingManager  # our previously defined rating manager
+from S3Manager import S3Manager
 
 
 class ImagineImage:
@@ -47,7 +50,7 @@ class ImagineImage:
 
         # Normal mode variables.
         self.current_image = None  # holds a PIL Image for normal mode
-        self.last_image_time = None # sentinel value; None == starting up
+        self.last_image_time = None  # sentinel value; None == starting up
 
         # Rating mode variables.
         self.rating_mode = False
@@ -78,9 +81,9 @@ class ImagineImage:
         for file in files[:len(files) - min_files]:
             try:
                 file.unlink()
-                print(f"Deleted: {file}")
+                logger.info(f"Deleted: {file}")
             except Exception as e:
-                print(f"Failed to delete {file}: {e}")
+                logger.warn(f"Failed to delete {file}: {e}")
 
     def scale_image_to_fit_screen(self, screen_w: int, screen_h: int, img_w: int, img_h: int) -> tuple[int, int]:
         scale = min(screen_w / img_w, screen_h / img_h)
@@ -91,11 +94,11 @@ class ImagineImage:
         theme_dir = self.config["active_theme"].replace(".yaml", "")
         image_dir = Path(self.config["save_directory_path"]) / theme_dir
         if not (image_dir.exists() and image_dir.is_dir()):
-            print(f"{image_dir} not found.")
+            logger.info(f"{image_dir} not found.")
             return None
         images = list(image_dir.glob("*.png")) + list(image_dir.glob("*.jpg")) + list(image_dir.glob("*.jpeg"))
         if not images:
-            print(f"No images found in {str(image_dir)}")
+            logger.info(f"No images found in {str(image_dir)}")
             return None
         image_path = random.choice(images)
         return self.get_image_from_disk(image_path)
@@ -105,7 +108,7 @@ class ImagineImage:
             pil_img = Image.open(str(path_to_image_file))
             return pil_img.convert("RGB")
         except Exception as e:
-            print(f"Failed to load {path_to_image_file}: {e}")
+            logger.warn(f"Failed to load {path_to_image_file}: {e}")
             return None
 
     @staticmethod
@@ -122,7 +125,7 @@ class ImagineImage:
         its aspect ratio, center it on a background of the given color, and update the canvas.
         """
         if pil_img is None:
-            print("display_image_tk: Received None image")
+            logger.warn("display_image_tk: Received None image")
             return
 
         # Update idle tasks and get canvas dimensions.
@@ -171,6 +174,7 @@ class ImagineImage:
 
         if self.last_image_time is None:
             # grab a random image and display it immediately so we don't have a blank screen
+            logger.info("Setting up first image")
             self.current_image = self.get_random_image_from_disk()
             self.display_image_tk(self.current_image, self.config["background_color"])
             self.last_image_time = time.time() - 86400  # force immediate update
@@ -180,7 +184,7 @@ class ImagineImage:
         min_display_duration = self.parse_display_duration()
         now = time.time()
         if now - self.last_image_time >= min_display_duration or self.current_image is None:
-            print("Timer expired; getting new image.")
+            logger.info("Timer expired; getting new image.")
             self.config = self.config_mgr.load_config()
             self.delete_oldest_files(self.config["save_directory_path"], int(self.config["max_num_saved_files"]))
 
@@ -193,14 +197,14 @@ class ImagineImage:
                 )
                 image_path: Path = output_file_info[0]
                 prompt_path: Path = output_file_info[1]
-                print(f"New image from disk at {str(image_path)}")
+                logger.info(f"New image from disk at {str(image_path)}")
                 if image_path is not None:
-                    theme_name = self.prompt_generator.get_theme_name().replace(".yaml","")
+                    theme_name = self.prompt_generator.get_theme_name().replace(".yaml", "")
                     s3_key_img = f"{theme_name}/{os.path.basename(image_path)}"
-                    print(f"Saving image to S3 at {s3_key_img}")
+                    logger.info(f"Saving image to S3 at {s3_key_img}")
                     self.s3_manager.upload_to_s3(image_path, s3_key_img)
                     s3_key_prompt = f"{theme_name}/{os.path.basename(prompt_path)}"
-                    print(f"Saving prompt to S3 at {s3_key_prompt}")
+                    logger.info(f"Saving prompt to S3 at {s3_key_prompt}")
                     self.s3_manager.upload_to_s3(prompt_path, s3_key_prompt)
                     self.current_image = self.get_image_from_disk(image_path)
             self.last_image_time = now
@@ -226,16 +230,16 @@ class ImagineImage:
         """Exit rating mode and return to normal mode."""
         self.rating_mode = False
         self.rating_manager = None
-        self.image_canvas.itemconfig(self.info_text_id,text="Normal Mode: Press 'r' to enter rating mode.")
+        self.image_canvas.itemconfig(self.info_text_id, text="Normal Mode: Press 'r' to enter rating mode.")
 
     def update_rating_display(self):
         """Update the display to show the current rating image and info from RatingManager."""
         if self.rating_manager is None or not self.rating_manager.rating_list:
-            self.image_canvas.itemconfig(self.info_text_id,text="Rating Mode: No images to rate.")
+            self.image_canvas.itemconfig(self.info_text_id, text="Rating Mode: No images to rate.")
             return
 
         current_file = self.rating_manager.rating_list[self.rating_manager.current_index]
-        print(f"Updating rating display with {current_file}")
+        logger.info(f"Updating rating display with {current_file}")
         pil_img = self.get_image_from_disk(Path(current_file))
         self.display_image_tk(pil_img, self.config["background_color"])
 
@@ -254,7 +258,7 @@ class ImagineImage:
 
     def on_key(self, event):
         key = event.keysym.lower()
-        print(f"got key: '{key}'; we are {"" if self.rating_mode else 'not '} in rating mode.")
+        logger.info(f"got key: '{key}'; we are {"" if self.rating_mode else 'not '} in rating mode.")
         if self.rating_mode:
             # In rating mode, process rating and navigation keys.
             if key in ['1', '2', '3', '4', '5']:
@@ -267,13 +271,15 @@ class ImagineImage:
                     self.rating_manager.prev()
                     self.update_rating_display()
                 except Exception as e:
-                    print("Already at first image.")
+                    logger.info("Already at first image.")
+                    # todo: display this to user
             elif key == "right":
                 try:
                     self.rating_manager.next()
                     self.update_rating_display()
                 except Exception as e:
-                    print("Already at last image.")
+                    logger.info("Already at last image.")
+                    # todo: display this to user
             elif key == "x":
                 self.exit_rating_mode()
             else:
@@ -307,5 +313,43 @@ class ImagineImage:
 if __name__ == '__main__':
     print("Service started!", file=sys.stdout, flush=True)
     load_dotenv()
+
+    # set up arg parser
+    parser = argparse.ArgumentParser(
+        description='Make interesting images with AI)',
+        epilog="Definitely alpha software!")
+
+    parser.add_argument('--log-level', action="store", choices=['info', 'debug', 'warning', 'error'],
+                        default='info', help="set logging level")
+    parser.add_argument('--log-mode', action="store", choices=['append', 'overwrite'],
+                        default='overwrite', help="append to logging or start fresh")
+
+    cli_args = parser.parse_args()
+
+    # set log level
+    loglevel: str = cli_args.log_level.upper()
+    numeric_level = getattr(logging, loglevel.upper(), 20)  # 20 INFO, 10 DEBUG
+    if not isinstance(numeric_level, int):
+        raise ValueError(f'Invalid log level: {loglevel}')
+    if cli_args.log_level is not None:
+        print(f"Logging level: {cli_args.log_level} ({numeric_level})")
+
+    log_filemode: str = 'a' if cli_args.log_mode.casefold() == 'append' else 'w'  # 'a' == append, 'w' over-write
+    # build the logger
+    logging.basicConfig(
+        filename="logfile.log", encoding='utf-8',
+        level=numeric_level,
+        filemode=log_filemode,
+        format="%(asctime)s:%(levelname)s:%(message)s"
+    )
+    logger = logging.getLogger(__name__)
+
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+    console_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+    logger.addHandler(console_handler)
+
+    logger.info(f"args = {cli_args}")
+
     app = ImagineImage()
     app.main()
