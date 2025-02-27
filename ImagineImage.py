@@ -20,6 +20,7 @@ from S3Manager import S3Manager
 class ImagineImage:
     CONFIG_FILE = Path(ConfigMgr.LOCAL_CONFIG_FILE_NAME)
     RATING_INSTRUCTIONS = "Use numbers 1-5 to rate, ←/→ to navigate, X to exit."
+    UPDATE_INTERVAL = 250
 
     def __init__(self):
         # Initialize TKInter root and create display widgets.
@@ -184,7 +185,7 @@ class ImagineImage:
         """
         if self.rating_mode:
             # In rating mode, do not update from normal mode.
-            self.tk_root.after(250, self.update_image)
+            self.tk_root.after(ms=self.UPDATE_INTERVAL, func=self.update_image)
             return
 
         if self.last_image_time is None:
@@ -228,7 +229,7 @@ class ImagineImage:
 
         if self.current_image:
             self.display_image_tk(self.current_image, self.config["background_color"])
-        self.tk_root.after(250, self.update_image)
+        self.tk_root.after(ms=self.UPDATE_INTERVAL, func=self.update_image)
 
     def enter_rating_mode(self):
         """Switch to rating mode: initialize RatingManager and display the first unrated image."""
@@ -268,10 +269,9 @@ class ImagineImage:
         # Update the info label with filename and current rating (if any).
         filename = Path(current_file).name
         num_to_rate = self.rating_manager.num_remaining_to_rate()
-        info = (
-            f"Rating Mode\n{self.RATING_INSTRUCTIONS}\nFile: {filename}\nThere are {num_to_rate} images to rate"
-        )
-        self.image_canvas.itemconfig(self.info_text_id, text=info)
+        self.image_canvas.itemconfig(self.info_text_id, text=
+                                     f"Rating Mode\n{self.RATING_INSTRUCTIONS}\n"
+                                     f"File: {filename}\nThere are {num_to_rate} images to rate")
 
     def on_key(self, event):
         key = event.keysym.lower()
@@ -289,15 +289,16 @@ class ImagineImage:
                     self.update_rating_display()
                 except Exception as e:
                     logger.info("Already at first image.")
-                    # todo: display this to user
+                    self.image_canvas.itemconfig(self.info_text_id, text="Already at first image.")
+
             elif key == "right":
                 try:
                     self.rating_manager.next()
                     self.update_rating_display()
                 except Exception as e:
-                    logger.info("Already at last image.")
-                    # todo: display this to user
-            elif key == "x":
+                    logger.info("Already at last image. Hit X to exit rating mode.")
+                    self.image_canvas.itemconfig(self.info_text_id, text="No more images.")
+            elif key == 'x':
                 self.exit_rating_mode()
             else:
                 # Ignore other keys in rating mode.
@@ -316,9 +317,6 @@ class ImagineImage:
                 self.tk_root.attributes("-fullscreen", False)
                 self.config["full_screen"] = False
                 self.config_mgr.save_config(self.config)
-            elif key == 'o':
-                self.config = self.config_mgr.load_config()
-                self.config_mgr.show_options_dialog(self.config)
 
     def main(self):
         self.config = self.config_mgr.load_config()
