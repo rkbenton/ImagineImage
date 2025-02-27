@@ -30,21 +30,22 @@ class ImagineImage:
         self.image_generator = ImageGenerator(prompt_generator=self.prompt_generator, api_key=api_key)
         self.s3_manager = S3Manager()
 
-        # Save the original window dimensions
-        self.window_width = 800
-        self.window_height = 600
-        self.window_position = (100, 100)  # Default x, y position
-
         # Initialize TKInter root and create display widgets.
         self.tk_root = tk.Tk()
         self.tk_root.title("Imagine Image")
+
+        self.window_width = 0
+        self.window_height = 0
+        self.window_position = 0
+        self.set_window_default_size()
+
         self.tk_root.geometry(
             f"{self.window_width}x{self.window_height}+{self.window_position[0]}+{self.window_position[1]}")
-        self.current_tk_image = None
 
         self.image_canvas = tk.Canvas(self.tk_root, highlightthickness=0)
         self.image_canvas.pack(fill=tk.BOTH, expand=True)
         self.image_canvas.focus_set()
+        self.current_tk_image = None
         self.image_id = None
 
         # Create an overlay text item on the canvas.
@@ -59,7 +60,7 @@ class ImagineImage:
         )
 
         # set is_fullscreen to opposite of desired state to toggle flips to it
-        self.is_fullscreen:bool = not self.config.get("full_screen", False)
+        self.is_fullscreen: bool = not self.config.get("full_screen", False)
         self.toggle_fullscreen()
 
         # Bind the canvas's configuration changes to update the overlay's size.
@@ -75,8 +76,6 @@ class ImagineImage:
 
         # Bind key events.
         self.tk_root.bind("<Key>", self.on_key)
-
-
 
     def parse_display_duration(self) -> int:
         try:
@@ -325,7 +324,7 @@ class ImagineImage:
             elif key == 't':
                 self.toggle_fullscreen()
 
-    def update_info_text(self, msg:str):
+    def update_info_text(self, msg: str):
         self.image_canvas.itemconfig(
             self.info_text_id,
             text=f"{msg:str}"
@@ -334,12 +333,14 @@ class ImagineImage:
     def toggle_fullscreen(self):
         if not self.is_fullscreen:
             logger.info(f"Entering full screen mode.")
-            print("biggie")
             # Save current window position and size before going fullscreen
             self.window_width = self.tk_root.winfo_width()
             self.window_height = self.tk_root.winfo_height()
             self.window_position = (self.tk_root.winfo_x(), self.tk_root.winfo_y())
-
+            # initial values may be zero, thus default to 200 minimums; well catch
+            # that and set it to something more reasonable
+            if self.window_width == 200 and self.window_height == 200:
+                self.set_window_default_size()
             # Go fullscreen
             self.tk_root.attributes("-fullscreen", True)
             self.is_fullscreen = True
@@ -348,7 +349,6 @@ class ImagineImage:
         else:
             # Exit fullscreen and restore previous dimensions
             logger.info(f"Entering small screen mode.")
-            print("teeny")
             self.tk_root.attributes("-fullscreen", False)
             self.is_fullscreen = False
 
@@ -376,6 +376,11 @@ class ImagineImage:
         # Start the normal mode image update loop.
         self.tk_root.after(100, self.update_image)
         self.tk_root.mainloop()
+
+    def set_window_default_size(self):
+        self.window_width = self.tk_root.winfo_screenwidth() // 2
+        self.window_height = self.tk_root.winfo_screenheight() // 2
+        self.window_position = (50, 100)  # Default x, y position
 
 
 if __name__ == '__main__':
