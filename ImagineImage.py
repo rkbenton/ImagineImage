@@ -23,14 +23,28 @@ class ImagineImage:
     UPDATE_INTERVAL = 250
 
     def __init__(self):
+        self.config_mgr = ConfigMgr()
+        self.config = self.config_mgr.load_config()
+        api_key = os.environ["OPEN_AI_SECRET"]
+        self.prompt_generator = PromptGenerator(config_mgr=self.config_mgr, api_key=api_key)
+        self.image_generator = ImageGenerator(prompt_generator=self.prompt_generator, api_key=api_key)
+        self.s3_manager = S3Manager()
+
+        # Save the original window dimensions
+        self.window_width = 800
+        self.window_height = 600
+        self.window_position = (100, 100)  # Default x, y position
+
         # Initialize TKInter root and create display widgets.
         self.tk_root = tk.Tk()
         self.tk_root.title("Imagine Image")
-        self.tk_root.geometry("800x600")
+        self.tk_root.geometry(
+            f"{self.window_width}x{self.window_height}+{self.window_position[0]}+{self.window_position[1]}")
+        self.current_tk_image = None
 
-        # Replace the label with a Canvas that will display both image and overlay text.
         self.image_canvas = tk.Canvas(self.tk_root, highlightthickness=0)
         self.image_canvas.pack(fill=tk.BOTH, expand=True)
+        self.image_canvas.focus_set()
         self.image_id = None
 
         # Create an overlay text item on the canvas.
@@ -39,20 +53,17 @@ class ImagineImage:
             10, 10,  # x, y position (top-left corner)
             width=self.image_canvas.winfo_width() - 20,  # initial width (will update)
             anchor="nw",
-            text="Normal Mode:\nPress 'r' to enter rating mode.",
+            text="",
             fill="white",
             font=("Helvetica", 12)
         )
 
+        # set is_fullscreen to opposite of desired state to toggle flips to it
+        self.is_fullscreen:bool = not self.config.get("full_screen", False)
+        self.toggle_fullscreen()
+
         # Bind the canvas's configuration changes to update the overlay's size.
         self.image_canvas.bind("<Configure>", self.on_canvas_configure)
-
-        self.config = None
-        self.config_mgr = ConfigMgr()
-        api_key = os.environ["OPEN_AI_SECRET"]
-        self.prompt_generator = PromptGenerator(config_mgr=self.config_mgr, api_key=api_key)
-        self.image_generator = ImageGenerator(prompt_generator=self.prompt_generator, api_key=api_key)
-        self.s3_manager = S3Manager()
 
         # Normal mode variables.
         self.current_image = None  # holds a PIL Image for normal mode
@@ -64,6 +75,8 @@ class ImagineImage:
 
         # Bind key events.
         self.tk_root.bind("<Key>", self.on_key)
+
+
 
     def parse_display_duration(self) -> int:
         try:
@@ -124,7 +137,7 @@ class ImagineImage:
             pil_img = Image.open(str(path_to_image_file))
             return pil_img.convert("RGB")
         except Exception as e:
-            logger.warn(f"Failed to load {path_to_image_file}: {e}")
+            logger.warning(f"Failed to load {path_to_image_file}: {e}")
             return None
 
     @staticmethod
@@ -270,8 +283,8 @@ class ImagineImage:
         filename = Path(current_file).name
         num_to_rate = self.rating_manager.num_remaining_to_rate()
         self.image_canvas.itemconfig(self.info_text_id, text=
-                                     f"Rating Mode\n{self.RATING_INSTRUCTIONS}\n"
-                                     f"File: {filename}\nThere are {num_to_rate} images to rate")
+        f"Rating Mode\n{self.RATING_INSTRUCTIONS}\n"
+        f"File: {filename}\nThere are {num_to_rate} images to rate")
 
     def on_key(self, event):
         key = event.keysym.lower()
@@ -309,19 +322,59 @@ class ImagineImage:
                 self.tk_root.quit()
             elif key == 'r':
                 self.enter_rating_mode()
-            elif key == 'f':
-                self.tk_root.attributes("-fullscreen", True)
-                self.config["full_screen"] = True
-                self.config_mgr.save_config(self.config)
-            elif key == 's':
-                self.tk_root.attributes("-fullscreen", False)
-                self.config["full_screen"] = False
-                self.config_mgr.save_config(self.config)
+            elif key == 't':
+                self.toggle_fullscreen()
+
+    def update_info_text(self, msg:str):
+        self.image_canvas.itemconfig(
+            self.info_text_id,
+            text=f"{msg:str}"
+        )
+
+    def toggle_fullscreen(self):
+        if not self.is_fullscreen:
+            logger.info(f"Entering full screen mode.")
+            print("biggie")
+            # Save current window position and size before going fullscreen
+            self.window_width = self.tk_root.winfo_width()
+            self.window_height = self.tk_root.winfo_height()
+            self.window_position = (self.tk_root.winfo_x(), self.tk_root.winfo_y())
+
+            # Go fullscreen
+            self.tk_root.attributes("-fullscreen", True)
+            self.is_fullscreen = True
+
+            # Update the info text to show current state
+        else:
+            # Exit fullscreen and restore previous dimensions
+            logger.info(f"Entering small screen mode.")
+            print("teeny")
+            self.tk_root.attributes("-fullscreen", False)
+            self.is_fullscreen = False
+
+            # Restore previous window size and position
+            self.tk_root.geometry(
+                f"{self.window_width}x{self.window_height}+{self.window_position[0]}+{self.window_position[1]}")
+
+    #
+    # def go_fullscreen(self):
+    #     self.is_fullscreen = True
+    #     self.tk_root.withdraw()
+    #     self.tk_root.attributes("-fullscreen", True)
+    #     self.config["full_screen"] = True
+    #     self.config_mgr.save_config(self.config)
+    #
+    # def go_smallscreen(self):
+    #     logger.info(f"Entering small screen mode.")
+    #     self.is_fullscreen = False
+    #     self.tk_root.attributes("-fullscreen", False)
+    #     self.config["full_screen"] = False
+    #     self.config_mgr.save_config(self.config)
 
     def main(self):
         self.config = self.config_mgr.load_config()
         # Start the normal mode image update loop.
-        self.tk_root.after(0, self.update_image)
+        self.tk_root.after(100, self.update_image)
         self.tk_root.mainloop()
 
 

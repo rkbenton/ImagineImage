@@ -34,13 +34,12 @@ The project is [available on GitHub](https://github.com/rkbenton/ImagineImage)
 
 # Keyboard Commands
 
-| Key    | Effect           |
-|--------|------------------|
-| `f, F` | Full screen      |
-| `s, S` | Small Window     |
-| `r, R` | Rating Mode      |
-| `x, X` | Exit Rating Mode |
-| `q, Q` | Quit             |
+| Key    | Effect            |
+|--------|-------------------|
+| `t, T` | Toggle Fullscreen |
+| `r, R` | Rating Mode       |
+| `x, X` | Exit Rating Mode  |
+| `q, Q` | Quit              |
 
 
 # Deployment
@@ -148,4 +147,8 @@ git log --after="2025-2-18"  --oneline > git_log.txt
 You can then upload `git_log.txt` to, say, ChatGPT and then tell it to:
 ```
 create a reasonable changelog from these git commits; produce the results using markdown format
+```
+
+```
+git tag -a v1.2.0 746bae6 -m "Version v1.2.0"
 ```
