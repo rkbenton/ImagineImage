@@ -21,8 +21,9 @@ def config_mgr():
         "display_duration": "01:00:00",
         "full_screen": True,
         "max_num_saved_files": 200,
+        "minimum_rating": 1.4,
         "save_directory_path": "image_out",
-        "background_color": [0, 0, 0],
+        "background_color": "#334455",
         "active_theme": "creative",
         "active_style": "realistic",
         "themes_directory": TEST_THEMES_DIR_NAME

@@ -24,8 +24,9 @@ def sample_config():
         "display_duration": "01:00:00",
         "full_screen": True,
         "max_num_saved_files": 250,
+        "minimum_rating": 1.0,
         "save_directory_path": "image_out",
-        "background_color": [0, 0, 0],
+        "background_color": "#aabbcc",
         "active_theme": "creative.yaml",
         "active_style": "random",
         "themes_directory": "themes"
@@ -65,6 +66,7 @@ class TestConfigMgr:
         assert config["display_duration"] == ConfigMgr.DEFAULT_DISPLAY_DURATION
         assert config["full_screen"] is True
         assert isinstance(config["max_num_saved_files"], int)
+        assert isinstance(config["minimum_rating"], float)
         assert config["background_color"] == "#000000"
         assert config["active_theme"] == "creative.yaml"
         assert config["active_style"] == "random"
@@ -89,7 +91,7 @@ class TestConfigMgr:
         # Test invalid configurations
         invalid_configs = [
             ({"display_duration": "25:00:00"}, "Invalid duration"),
-            ({"background_color": [256, 0, 0]}, "Color value 256"),
+            ({"background_color": "Aardvark"}, "background_color should be a hex color value"),
             ({"max_num_saved_files": 0}, "Maximum saved files"),
             ({"save_directory_path": "nonexistent_dir"}, "Save directory"),
         ]
@@ -117,6 +119,7 @@ class TestConfigMgr:
             "display_duration",
             "full_screen",
             "max_num_saved_files",
+            "minimum_rating",
             "save_directory_path",
             "background_color",
             'active_theme',
@@ -125,19 +128,3 @@ class TestConfigMgr:
             'local_files_only'
         }
         assert set(config.keys()) == required_keys
-
-    def test_background_color_validation(self, config_mgr, sample_config):
-        """Test validation of background color values"""
-        invalid_colors = [
-            [-1, 0, 0],
-            [0, 256, 0],
-            [0, 0, "invalid"],
-            [0, 0],  # Too few values
-            [0, 0, 0, 0]  # Too many values
-        ]
-
-        for colors in invalid_colors:
-            invalid_config = sample_config.copy()
-            invalid_config["background_color"] = colors
-            with pytest.raises(ValueError):
-                config_mgr.validate_config_values(invalid_config)

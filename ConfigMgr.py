@@ -1,6 +1,4 @@
 import json  # JSON library for configuration handling
-import tkinter as tk  # Tkinter for GUI and configuration dialog
-import tkinter.messagebox
 from pathlib import Path
 from typing import Dict, Any
 
@@ -116,9 +114,9 @@ class ConfigMgr:
         if not self.validate_time_string(duration_str):
             errors.append(f"Invalid duration: '{duration_str}'. Use HH:MM:SS format")
 
-        # Validate RGB values
-        if len(config_dict['background_color']) != 7 or not config_dict['background_color'].startswith("#"):
-            errors.append(f"Background be a hex color value (e.g. '#a1beef') Found: '{config_dict['background_color']}'")
+        # Validate background values
+        if not config_dict['background_color'].startswith("#"):
+            errors.append("background_color should be a hex color value")
 
         # Validate max files
         if config_dict["max_num_saved_files"] <= 0:

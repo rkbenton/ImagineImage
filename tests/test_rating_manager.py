@@ -15,11 +15,22 @@ from RatingManager import (
 # ----------------------------
 class DummyS3Manager:
     def __init__(self):
+        self.is_in_s3_result = True
         self.changes = []  # Records tuples of (cur_key, new_key)
 
-    def change_name_in_cloud(self, cur_key: str, new_key: str):
+#    def change_name_in_cloud(self, cur_key: str, new_key: str):
+    def change_name_in_cloud(self, s3_prefix: str, cur_filename: str, new_filename: str):
+
         # Instead of real S3 operations, simply record the change.
-        self.changes.append((cur_key, new_key))
+        self.changes.append((cur_filename, new_filename))
+
+    def upload_to_s3(self, file_path, s3_key: str):
+        # Instead of real S3 operations, simply record the change.
+        self.changes.append((file_path, s3_key))
+
+    def is_in_s3(self, s3_prefix: str, filename: str) -> bool:
+        return self.is_in_s3_result
+
 
 
 # ----------------------------
