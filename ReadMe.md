@@ -34,12 +34,13 @@ The project is [available on GitHub](https://github.com/rkbenton/ImagineImage)
 
 # Keyboard Commands
 
-| Key    | Effect          |
-|--------|-----------------|
-| `o, O` | Options dialog  |
-| `f, F` | Full screen     |
-| `s, S` | Small Window    |
-| `q, Q` | Quit            |
+| Key    | Effect           |
+|--------|------------------|
+| `f, F` | Full screen      |
+| `s, S` | Small Window     |
+| `r, R` | Rating Mode      |
+| `x, X` | Exit Rating Mode |
+| `q, Q` | Quit             |
 
 
 # Deployment
