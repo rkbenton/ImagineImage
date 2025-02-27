@@ -2,6 +2,7 @@
     "display_duration": "03:00:00",
     "full_screen": true,
     "local_files_only": false,
+    "minimum_rating": 1.0,
     "max_num_saved_files": 250,
     "background_color": "#000000",
     "active_theme": "creative.yaml",
