@@ -24,7 +24,7 @@ def sample_config():
         "display_duration": "01:00:00",
         "full_screen": True,
         "max_num_saved_files": 250,
-        "minimum_rating": 1.0,
+        "minimum_rating_filter": 1.0,
         "save_directory_path": "image_out",
         "background_color": "#aabbcc",
         "active_theme": "creative.yaml",
@@ -66,7 +66,7 @@ class TestConfigMgr:
         assert config["display_duration"] == ConfigMgr.DEFAULT_DISPLAY_DURATION
         assert config["full_screen"] is True
         assert isinstance(config["max_num_saved_files"], int)
-        assert isinstance(config["minimum_rating"], float)
+        assert isinstance(config["minimum_rating_filter"], float)
         assert config["background_color"] == "#000000"
         assert config["active_theme"] == "creative.yaml"
         assert config["active_style"] == "random"
@@ -119,7 +119,7 @@ class TestConfigMgr:
             "display_duration",
             "full_screen",
             "max_num_saved_files",
-            "minimum_rating",
+            "minimum_rating_filter",
             "save_directory_path",
             "background_color",
             'active_theme',
