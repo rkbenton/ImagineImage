@@ -333,13 +333,16 @@ class ImagineImage:
     def toggle_fullscreen(self):
         if not self.is_fullscreen:
             logger.info(f"Entering full screen mode.")
+            # let windowing system update itself so we get proper window size
+            self.tk_root.update_idletasks()
             # Save current window position and size before going fullscreen
             self.window_width = self.tk_root.winfo_width()
             self.window_height = self.tk_root.winfo_height()
             self.window_position = (self.tk_root.winfo_x(), self.tk_root.winfo_y())
+
             # initial values may be zero, thus default to 200 minimums; well catch
             # that and set it to something more reasonable
-            if self.window_width == 200 and self.window_height == 200:
+            if self.window_width <= 200 and self.window_height <= 200:
                 self.set_window_default_size()
             # Go fullscreen
             self.tk_root.attributes("-fullscreen", True)
@@ -353,23 +356,7 @@ class ImagineImage:
             self.is_fullscreen = False
 
             # Restore previous window size and position
-            self.tk_root.geometry(
-                f"{self.window_width}x{self.window_height}+{self.window_position[0]}+{self.window_position[1]}")
-
-    #
-    # def go_fullscreen(self):
-    #     self.is_fullscreen = True
-    #     self.tk_root.withdraw()
-    #     self.tk_root.attributes("-fullscreen", True)
-    #     self.config["full_screen"] = True
-    #     self.config_mgr.save_config(self.config)
-    #
-    # def go_smallscreen(self):
-    #     logger.info(f"Entering small screen mode.")
-    #     self.is_fullscreen = False
-    #     self.tk_root.attributes("-fullscreen", False)
-    #     self.config["full_screen"] = False
-    #     self.config_mgr.save_config(self.config)
+            self.tk_root.geometry(f"{self.window_width}x{self.window_height}+{self.window_position[0]}+{self.window_position[1]}")
 
     def main(self):
         self.config = self.config_mgr.load_config()
@@ -380,7 +367,7 @@ class ImagineImage:
     def set_window_default_size(self):
         self.window_width = self.tk_root.winfo_screenwidth() // 2
         self.window_height = self.tk_root.winfo_screenheight() // 2
-        self.window_position = (50, 100)  # Default x, y position
+        self.window_position = (50, 50)  # Default x, y position
 
 
 if __name__ == '__main__':
