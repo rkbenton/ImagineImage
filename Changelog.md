@@ -6,7 +6,7 @@
 
 - Added rating functionality
     - First pass at rating functionality (37860cd)
-    - Added minimum_rating to config_factory.json model (ab88a8f)
+    - Added minimum_rating_filter to config_factory.json model (ab88a8f)
     - Added RatingManager.py (789c9ed)
 - Added documentation
     - Added RaspiBuildOut.md document (b881d17)
