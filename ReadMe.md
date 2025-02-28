@@ -97,6 +97,10 @@ Perhaps more useful for troubleshooting is seeing the last 10 minutes-worth of l
 ```
 journalctl -u imagineimage.service --no-pager --since "10 minutes ago"
 ```
+or tail it:
+```
+journalctl -f
+```
 ### Enabling and Starting the Service:
 ```
 sudo systemctl daemon-reload

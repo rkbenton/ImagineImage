@@ -60,6 +60,35 @@ ssh -T git@github.com
 ```
 You should see a successful communication with GH!
 
+## Remote GUI with Raspberry Pi Connect
+Optional GUI remoting with Raspberry Pi Connect: 
+[Raspberry Pi Connect](https://www.raspberrypi.com/documentation/services/connect.html)
+
+ssh into the box and install the remoting app:
+
+```
+sudo apt install rpi-connect
+```
+## Associate your device with your Connect account.
+```
+rpi-connect on
+rpi-connect signin
+Complete sign in by visiting https://connect.raspberrypi.com/verify/XXXX-XXXX
+```
+## GUI
+
+
+After installation, use the rpi-connect command line interface to start Connect for your current user:
+
+```
+rpi-connect on
+```
+If you’re using the Connect plugin for the menu bar, clicking "Turn On Raspberry Pi Connect" for the first time will open your browser, prompting you to sign in with your Raspberry Pi ID.
+## Finish linking your Raspberry Pi
+
+After authenticating, assign a name to your device. Choose a name that uniquely identifies the device. Click the **Create device and sign in** button to continue.
+
+
 # Set up AWS creds
 
 ```
