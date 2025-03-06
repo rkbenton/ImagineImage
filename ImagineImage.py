@@ -6,6 +6,7 @@ import sys
 import time
 import tkinter as tk
 from pathlib import Path
+import re
 
 from PIL import Image, ImageTk
 from dotenv import load_dotenv
@@ -117,8 +118,17 @@ class ImagineImage:
         scale = min(screen_w / img_w, screen_h / img_h)
         return int(img_w * scale), int(img_h * scale)
 
+    def extract_rating(self, filename: Path) -> float:
+        """
+        :return: Look for a rating in the file name and
+        return that value or 0.0 if not found"""
+        match = re.search(r'r\[(\d+\.\d+)\]', str(filename))
+        return float(match.group(1)) if match else 0.0
+
     def get_random_image_from_disk(self) -> Image.Image | None:
         # Assume images to be rated are stored in: save_directory_path/<theme_dir>
+        self.config = self.config_mgr.load_config()
+
         theme_dir = self.config["active_theme"].replace(".yaml", "")
         image_dir = Path(self.config["save_directory_path"]) / theme_dir
         if not (image_dir.exists() and image_dir.is_dir()):
@@ -128,8 +138,19 @@ class ImagineImage:
         if not images:
             logger.info(f"No images found in {str(image_dir)}")
             return None
-        image_path = random.choice(images)
-        return self.get_image_from_disk(image_path)
+
+        min_rating: float = float(self.config.get("minimum_rating_filter", 0.0))
+        # if min_rating is less than 1.0, do not filter
+        if min_rating < 1.0:
+            return self.get_image_from_disk(random.choice(images))
+
+        # find images of the given rating or above
+        filtered_images = [img for img in images if self.extract_rating(img) >= min_rating]
+        if len(filtered_images) == 0:
+            logger.warning(f"No images found with min rating of >= {min_rating} in {str(image_dir)}")
+            return self.get_image_from_disk(random.choice(images))
+
+        return self.get_image_from_disk(random.choice(filtered_images))
 
     def get_image_from_disk(self, path_to_image_file: Path) -> Image.Image | None:
         try:
@@ -200,8 +221,9 @@ class ImagineImage:
             self.tk_root.after(ms=self.UPDATE_INTERVAL, func=self.update_image)
             return
 
+        # First time? Do some extra work...
         if self.last_image_time is None:
-            self.last_image_time = time.time() - 86400  # force immediate update
+            self.last_image_time = time.time() - 86400  # trigger immediate update afterwards
             if not self.config["local_files_only"]:
                 # grab a random image and display it immediately so we don't have a blank screen
                 # while we generate a new prompt and a new image
@@ -356,7 +378,8 @@ class ImagineImage:
             self.is_fullscreen = False
 
             # Restore previous window size and position
-            self.tk_root.geometry(f"{self.window_width}x{self.window_height}+{self.window_position[0]}+{self.window_position[1]}")
+            self.tk_root.geometry(
+                f"{self.window_width}x{self.window_height}+{self.window_position[0]}+{self.window_position[1]}")
 
     def main(self):
         self.config = self.config_mgr.load_config()

@@ -42,6 +42,17 @@ The project is [available on GitHub](https://github.com/rkbenton/ImagineImage)
 | `q, Q` | Quit              |
 
 
+# Rating Mode
+This allows you to quickly rate a Theme's unrated images. Usage is simple:
+enter Rating Mode by hitting "r" on your keyboard. The app will then
+show you an image you can rate by hitting a number from 0 to 5, with 5
+being the highest rating. You can use the left and right arrow keys to
+move or skip to the next or previous image. 
+
+Note that you will be rating images for the curren t Theme (e.g. Halloween.)
+You will have to change the Theme if you want to rate images there. You
+can use ImagineApp to do that, or manually edit `config_local.json`.
+
 # Deployment
 Deploying to a Raspberry Pi is rather manual, but not too odious.
 
