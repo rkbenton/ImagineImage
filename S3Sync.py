@@ -1,5 +1,7 @@
 import json
 import os
+import random
+import time
 from datetime import datetime
 from typing import List, Dict, Tuple
 import re
@@ -7,6 +9,8 @@ import re
 from S3Manager import S3Manager
 
 import logging
+
+from imim_utils import print_progress_bar
 
 logger = logging.getLogger(__name__)
 
@@ -100,17 +104,16 @@ def synchronize_local_and_s3(s3_files: List[dict], local_files: List[dict], s3_m
 
     :param local_files: list of local files as dict of 'name':str, 'size':int, 'last_modified':datetime
     :param s3_files: list of files from S3 as dict of 'name':str, 'size':int, 'last_modified':datetime
-    :param mismatches: a list of approx-keys of mis-matched file names
     :param s3_manager: You know, one of those things you use to manage S3 files.
     """
-    # approximate key -> s3 file metadata
+    # approximate key -> s3 file
     s3_dict = {
         create_approximating_key(file['name']): file for file in s3_files
     }
     # sort dict by key's value, just for human comprehension
     s3_dict = dict(sorted(s3_dict.items()))
 
-    # approximate key -> local file metadata
+    # approximate key -> local file
     local_dict = {
         create_approximating_key(file['name']): file for file in local_files
     }
@@ -141,6 +144,58 @@ def synchronize_local_and_s3(s3_files: List[dict], local_files: List[dict], s3_m
         copy_local_to_s3.append(local_dict[item])
     for item in set_of_approx_only_in_s3:
         copy_s3_to_local.append(s3_dict[item])
+
+    # Copy up
+    num_files = len(copy_local_to_s3)
+    if num_files > 0:
+        print(f"Copying {num_files} local files up to S3")
+        print_progress_bar(0, num_files, prefix='Progress:', suffix='Complete', length=50)
+        for count, local_file in enumerate(copy_local_to_s3):
+            # validation...
+            file_key = local_file['name']
+            if len(file_key) < 17:
+                continue
+            key_pathing, key_filename = os.path.split(local_file['name'])
+            if len(key_filename) < 15 or key_filename.endswith('/') or len(key_pathing) < 2:
+                continue
+            local_path = os.path.join('image_out', file_key)
+            s3_manager.upload_to_s3(local_path, file_key)  # <-- consumes exceptions
+            print_progress_bar(count + 1, num_files, prefix='Progress:', suffix='Complete', length=50)
+
+    # Copy down
+    # todo: make function that takes a max amount and a 'randomize' boolean, filter to specific directory/theme
+    num_files: int = len(copy_s3_to_local)
+    theme_name_filter: str = "creative"  # empty string means do not filter by theme
+    max_to_copy: int = 50  # special value 0 means copy all the files
+    randomize: bool = True
+
+    if num_files> 0 and theme_name_filter and len(theme_name_filter) > 0:
+        filtered_list = [item for item in copy_s3_to_local if item["name"].startswith(theme_name_filter)]
+        num_files = len(filtered_list)
+        if 0 == num_files:
+            print(f"There are zero files in S3 for {theme_name_filter}")
+    else:
+        filtered_list = copy_s3_to_local
+
+    if num_files > 0:
+        num_copied = 0
+        if max_to_copy < 1:   # 0 means copy all files
+            max_to_copy = num_files
+        else:
+            max_to_copy = min(max_to_copy, num_files)
+        if randomize:
+            random.shuffle(filtered_list)
+        print(f"Copying {max_to_copy} files down from S3")
+        print_progress_bar(0, max_to_copy, prefix='Progress:', suffix='Complete', length=50)
+        for count, s3_file in enumerate(filtered_list):
+            file_key: str = s3_file['name']
+            # are we filtering by theme name? If so, skip any not in theme
+            local_path = os.path.join('image_out', file_key)
+            s3_manager.download_from_s3(file_key, local_path)
+            num_copied += 1
+            print_progress_bar(count + 1, max_to_copy, prefix='Progress:', suffix='Complete', length=50)
+            if num_copied >= max_to_copy:
+                break
 
     # look for files approximately in both that might
     # need renaming (e.g. the s3 version has a rating and
@@ -285,7 +340,7 @@ def cleanse_s3_dupes(s3_files, s3: S3Manager) -> bool:
 
     dupes_deleted = 0
     for akey, the_list in akey_to_file_list.items():
-        if len(the_list) < 2: # the list *should* be only 1 long
+        if len(the_list) < 2:  # the list *should* be only 1 long
             continue
         item_with_rating = None
         print(f"\nFound dupes for approximate key '{akey}'")
@@ -313,11 +368,12 @@ def cleanse_s3_dupes(s3_files, s3: S3Manager) -> bool:
         return True
     return False
 
+
 def main():
     s3_manager = S3Manager()
 
     s3_files = s3_manager.list_files()
-    any_deleted:bool = cleanse_s3_dupes(s3_files, s3_manager)
+    any_deleted: bool = cleanse_s3_dupes(s3_files, s3_manager)
     if any_deleted:
         s3_files = s3_manager.list_files()
 

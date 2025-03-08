@@ -1,6 +1,9 @@
 import os
 
 import boto3
+import boto3
+from botocore.exceptions import ClientError
+import os
 
 
 class S3Manager(object):
@@ -19,7 +22,7 @@ class S3Manager(object):
         """
         self.s3 = boto3.client("s3")  # Initialize an S3 client using boto3
 
-    def upload_to_s3(self, file_path, s3_key: str):
+    def upload_to_s3(self, file_path, s3_key: str) -> None:
         """
         Uploads a given file to the specified S3 bucket.
 
@@ -35,7 +38,33 @@ class S3Manager(object):
             print(f"✅ Uploaded {file_name} to S3 bucket: {self.S3_BUCKET + '/' + s3_key}")
         except Exception as e:
             # Handle any errors that occur during the upload process
-            print(f"❌ Upload to S3 failed: {e}")
+            print(f"❌ Upload of {file_name} to S3 failed: {e}")
+
+    def download_from_s3(self, s3_key: str, local_file_path: str) -> None:
+        """
+        Download a file from S3 to a local path. Will create local directories
+        as needed.
+
+        :param s3_key: S3 key to download the file from, similar to a file path
+        :param local_file_path: Local path to download the file to
+        :return: None
+        """
+        try:
+            os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
+
+            self.s3.download_file(
+                Bucket=self.S3_BUCKET,
+                Key=s3_key,
+                Filename=local_file_path
+            )
+
+            print(f"Successfully downloaded {s3_key} to {local_file_path}")
+            print(f"✅ Downloaded {s3_key} to : {local_file_path}")
+
+        except ClientError as e:
+            print(f"❌ Error downloading {s3_key} from S3: {e}")
+        except Exception as e:
+            print(f"❌ Unexpected error downloading {s3_key}: {e}")
 
     def list_files(self, extension=None, ascending=True):
         """
@@ -89,8 +118,7 @@ class S3Manager(object):
         except self.s3.exceptions.ClientError as e:
             return False
 
-
-    def delete_file(self,  cur_key: str) -> bool:
+    def delete_file(self, cur_key: str) -> bool:
         try:
             # Delete the original object
             self.s3.delete_object(
@@ -134,8 +162,8 @@ class S3Manager(object):
         they filenames separately.
         Raises an exception if the file does not exist in S3.
         """
-        cur_key = f"{s3_prefix}/{cur_filename}".replace("//","/")
-        new_key = f"{s3_prefix}/{new_filename}".replace("//","/")
+        cur_key = f"{s3_prefix}/{cur_filename}".replace("//", "/")
+        new_key = f"{s3_prefix}/{new_filename}".replace("//", "/")
         print(f"S3: changing name from {cur_key} to {new_key}r4")
         try:
             # Check if the object exists
