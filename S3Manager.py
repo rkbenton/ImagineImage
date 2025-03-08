@@ -89,13 +89,53 @@ class S3Manager(object):
         except self.s3.exceptions.ClientError as e:
             return False
 
+
+    def delete_file(self,  cur_key: str) -> bool:
+        try:
+            # Delete the original object
+            self.s3.delete_object(
+                Bucket=self.S3_BUCKET,
+                Key=cur_key
+            )
+            return True
+        except self.s3.exceptions.ClientError as e:
+            print(f"failed to delete file: {e}")
+            return False
+
+    def rename_s3_file(self, old_key, new_key):
+        """
+        Similar to change_name_in_cloud, this version expects the
+        keys to contain any pathing/prefixes, e.g. 'path/to/old_file.txt'.
+        Raises an exception if the file does not exist in S3.
+        """
+        try:
+            # Check if the object exists
+            self.s3.head_object(Bucket=self.S3_BUCKET, Key=old_key)
+        except self.s3.exceptions.ClientError as e:
+            raise Exception(f"S3 file with key '{old_key}' does not exist.") from e
+
+        # Copy the object to a new key
+        self.s3.copy_object(
+            Bucket=self.S3_BUCKET,
+            CopySource={'Bucket': self.S3_BUCKET, 'Key': old_key},
+            Key=new_key
+        )
+
+        # Delete the original object
+        self.s3.delete_object(
+            Bucket=self.S3_BUCKET,
+            Key=old_key
+        )
+
     def change_name_in_cloud(self, s3_prefix: str, cur_filename: str, new_filename: str):
         """
         Change the name (key) of a file in S3 from cur_key to new_key.
+        Similar to rename_s3_file, this lets you specify the path/prefix and
+        they filenames separately.
         Raises an exception if the file does not exist in S3.
         """
-        cur_key = f"{s3_prefix}/{cur_filename}"
-        new_key = f"{s3_prefix}/{new_filename}"
+        cur_key = f"{s3_prefix}/{cur_filename}".replace("//","/")
+        new_key = f"{s3_prefix}/{new_filename}".replace("//","/")
         print(f"S3: changing name from {cur_key} to {new_key}r4")
         try:
             # Check if the object exists
