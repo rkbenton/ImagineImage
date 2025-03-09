@@ -12,7 +12,7 @@ from PIL import Image, ImageTk
 from dotenv import load_dotenv
 
 from ConfigMgr import ConfigMgr
-from ImageGenerator import ImageGenerator
+from ImageGenerator import ImageGenerator, ImGenError
 from PromptGenerator import PromptGenerator
 from RatingManager import RatingManager  # our previously defined rating manager
 from S3Manager import S3Manager
@@ -243,22 +243,27 @@ class ImagineImage:
             if self.config["local_files_only"]:
                 self.current_image = self.get_random_image_from_disk()
             else:
+                output_file_info = None
                 screen_xy = (self.tk_root.winfo_screenwidth(), self.tk_root.winfo_screenheight())
-                output_file_info: [Path, Path] = self.image_generator.generate_image(
-                    screen_xy, self.config["save_directory_path"]
-                )
-                image_path: Path = output_file_info[0]
-                prompt_path: Path = output_file_info[1]
-                logger.info(f"New image from disk at {str(image_path)}")
-                if image_path is not None:
-                    theme_name = self.prompt_generator.get_theme_name().replace(".yaml", "")
-                    s3_key_img = f"{theme_name}/{os.path.basename(image_path)}"
-                    logger.info(f"Saving image to S3 at {s3_key_img}")
-                    self.s3_manager.upload_to_s3(image_path, s3_key_img)
-                    s3_key_prompt = f"{theme_name}/{os.path.basename(prompt_path)}"
-                    logger.info(f"Saving prompt to S3 at {s3_key_prompt}")
-                    self.s3_manager.upload_to_s3(prompt_path, s3_key_prompt)
-                    self.current_image = self.get_image_from_disk(image_path)
+                try:
+                    output_file_info: [Path, Path] = self.image_generator.generate_image(
+                        screen_xy, self.config["save_directory_path"]
+                    )
+                    image_path: Path = output_file_info[0]
+                    prompt_path: Path = output_file_info[1]
+                    logger.info(f"New image from disk at {str(image_path)}")
+                    if image_path is not None:
+                        theme_name = self.prompt_generator.get_theme_name().replace(".yaml", "")
+                        s3_key_img = f"{theme_name}/{os.path.basename(image_path)}"
+                        logger.info(f"Saving image to S3 at {s3_key_img}")
+                        self.s3_manager.upload_to_s3(image_path, s3_key_img)
+                        s3_key_prompt = f"{theme_name}/{os.path.basename(prompt_path)}"
+                        logger.info(f"Saving prompt to S3 at {s3_key_prompt}")
+                        self.s3_manager.upload_to_s3(prompt_path, s3_key_prompt)
+                        self.current_image = self.get_image_from_disk(image_path)
+                except ImGenError as e:
+                    logger.error(e, stack_info=True, exc_info=True)
+                    self.image_canvas.itemconfig(self.info_text_id, text=str(e))
             self.last_image_time = now
 
         if self.current_image:

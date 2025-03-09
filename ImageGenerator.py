@@ -15,6 +15,11 @@ from openai import OpenAI
 
 from PromptGenerator import PromptGenerator
 
+class ImGenError(Exception):
+    def __init__(self, message: str="An Error Occurred", prompt: str=None):
+        self.message = message
+        self.prompt = prompt
+        super().__init__(self.message)
 
 class ImageGenerator:
     """
@@ -35,7 +40,7 @@ class ImageGenerator:
 
         :param prompt: The image prompt to send.
         :param port_xy: The size of the target viewport (width, height).
-        :return: A PIL Image object or None on error.
+        :return: A PIL Image object or None on error. Will raise an ImGenError if error.
         """
         # Define image size based on aspect ratio
         if port_xy[0] == port_xy[1]:
@@ -56,16 +61,14 @@ class ImageGenerator:
             )
             image_url = response.data[0].url
         except Exception as e:
-            print("Error fetching image url:", e)
-            return None
+            raise  ImGenError(message="Error fetching image url", prompt=prompt) from e
 
         # Download and convert the image
         try:
             response = requests.get(image_url)
             img = Image.open(BytesIO(response.content))
         except Exception as e:
-            print(f"Error fetching from {image_url}:", e)
-            return None
+            raise  ImGenError(message=f"Error fetching from {image_url}", prompt=prompt) from e
 
         return img
 
@@ -77,7 +80,8 @@ class ImageGenerator:
         :param port_xy: The size of the target viewport (width, height).
         :param output_dir: The directory where output data is saved.
         :return: 2-part tuple; first part is the Path to the generated image
-        file or None on error; second part is the Path to the saved prompt.
+        file or raise an ImGenError on error; second part is the Path to
+        the saved prompt.
         """
         # Generate local prompt data
         prompt_data: dict[str, str] = self.prompt_generator.generate_prompt()
@@ -90,8 +94,7 @@ class ImageGenerator:
         # Fetch the generated image
         img: Image = self.get_image_from_service(embellished_prompt, port_xy)
         if img is None:
-            print("Image generation failed")
-            return None
+            raise  ImGenError(message="Image generation failed")
 
         # theme_name is used to name a subdirectory of image_out where the images
         # and prompts will be saved; this should be the name of the theme that
@@ -112,14 +115,13 @@ class ImageGenerator:
         try:
             img.save(img_path)
         except IOError as e:
-            print(f"Error writing image to file {img_path}: {e}")
-            return None
+            raise  ImGenError(message=f"Error writing image to file {img_path}") from e
 
         # Save prompt as text file (non-critical, but useful)
         try:
             with open(prompt_path, 'w') as f:
                 f.write(embellished_prompt)
         except IOError as e:
-            print(f"Error writing prompt to file {prompt_path}: {e}")
+            raise ImGenError(message=f"Error writing prompt to file {prompt_path}") from e
 
         return img_path, prompt_path
