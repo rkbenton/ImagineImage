@@ -89,6 +89,87 @@ def enforce_str_len(key, length=40):
     return padded_key
 
 
+def copy_s3_files_to_local(copy_s3_to_local: list, s3_manager: S3Manager, save_directory_path="image_out",
+                           max_to_copy=0, randomize=False,
+                           theme_name_filter="") -> None:
+    """
+    Copies files from an S3 bucket to a local directory.
+
+    :param copy_s3_to_local: List of dictionaries containing S3 file metadata, where each dictionary has a "name" key.
+    :param s3_manager: utility for S3
+    :param save_directory_path: root of where local images should go, default is "image_out"
+    :param max_to_copy: Maximum number of files to copy (0 means copy all available files).
+    :param randomize: If True, randomizes the order of files before copying.
+    :param theme_name_filter: If provided, filters files to only those starting with this theme name.
+    """
+    num_files = len(copy_s3_to_local)
+
+    # Apply theme filter if specified
+    if num_files > 0 and theme_name_filter:
+        filtered_list = [item for item in copy_s3_to_local if item["name"].startswith(theme_name_filter)]
+        num_files = len(filtered_list)
+    else:
+        filtered_list = copy_s3_to_local
+
+    if num_files == 0:
+        print("No files need to be copied from S3")
+        return
+
+    num_copied = 0
+
+    # Determine the number of files to copy; max_to_copy of zero means copy all
+    max_to_copy = num_files if max_to_copy < 1 else min(max_to_copy, num_files)
+
+    # Randomize if necessary
+    if randomize:
+        random.shuffle(filtered_list)
+
+    print(f"Copying {max_to_copy} files down from S3")
+    print_progress_bar(0, max_to_copy, prefix='Progress:', suffix='Complete', length=50)
+
+    for count, s3_file in enumerate(filtered_list):
+        file_key = s3_file['name']
+        local_path = os.path.join(save_directory_path, file_key)
+        s3_manager.download_from_s3(file_key, local_path)
+        num_copied += 1
+        print_progress_bar(count + 1, max_to_copy, prefix='Progress:', suffix='Complete', length=50)
+
+        if num_copied >= max_to_copy:
+            break
+
+
+def upload_local_files_to_s3(copy_local_to_s3, s3_manager: S3Manager) -> None:
+    """
+    Uploads local files to an S3 bucket, with basic validation checks.
+
+    :param s3_manager: utility for S3
+    :param copy_local_to_s3: List of dictionaries containing local file metadata, where each dictionary has a "name" key.
+    """
+    num_files = len(copy_local_to_s3)
+
+    if num_files > 0:
+        print(f"Copying {num_files} local files up to S3")
+        print_progress_bar(0, num_files, prefix='Progress:', suffix='Complete', length=50)
+
+        for count, local_file in enumerate(copy_local_to_s3):
+            file_key = local_file['name']
+
+            # Validation checks
+            if len(file_key) < 17:
+                continue
+
+            key_pathing, key_filename = os.path.split(file_key)
+            if len(key_filename) < 15 or key_filename.endswith('/') or len(key_pathing) < 2:
+                continue
+
+            local_path = os.path.join('image_out', file_key)
+
+            # Upload to S3
+            s3_manager.upload_to_s3(local_path, file_key)  # This method handles exceptions
+
+            print_progress_bar(count + 1, num_files, prefix='Progress:', suffix='Complete', length=50)
+
+
 def synchronize_local_and_s3(s3_files: List[dict], local_files: List[dict], s3_manager: S3Manager):
     """
     From this we want to glean:
@@ -145,57 +226,64 @@ def synchronize_local_and_s3(s3_files: List[dict], local_files: List[dict], s3_m
     for item in set_of_approx_only_in_s3:
         copy_s3_to_local.append(s3_dict[item])
 
-    # Copy up
-    num_files = len(copy_local_to_s3)
-    if num_files > 0:
-        print(f"Copying {num_files} local files up to S3")
-        print_progress_bar(0, num_files, prefix='Progress:', suffix='Complete', length=50)
-        for count, local_file in enumerate(copy_local_to_s3):
-            # validation...
-            file_key = local_file['name']
-            if len(file_key) < 17:
-                continue
-            key_pathing, key_filename = os.path.split(local_file['name'])
-            if len(key_filename) < 15 or key_filename.endswith('/') or len(key_pathing) < 2:
-                continue
-            local_path = os.path.join('image_out', file_key)
-            s3_manager.upload_to_s3(local_path, file_key)  # <-- consumes exceptions
-            print_progress_bar(count + 1, num_files, prefix='Progress:', suffix='Complete', length=50)
+    upload_local_files_to_s3(copy_local_to_s3, s3_manager)
 
-    # Copy down
+    #
+    # # Copy up
+    # num_files = len(copy_local_to_s3)
+    # if num_files > 0:
+    #     print(f"Copying {num_files} local files up to S3")
+    #     print_progress_bar(0, num_files, prefix='Progress:', suffix='Complete', length=50)
+    #     for count, local_file in enumerate(copy_local_to_s3):
+    #         # validation...
+    #         file_key = local_file['name']
+    #         if len(file_key) < 17:
+    #             continue
+    #         key_pathing, key_filename = os.path.split(local_file['name'])
+    #         if len(key_filename) < 15 or key_filename.endswith('/') or len(key_pathing) < 2:
+    #             continue
+    #         local_path = os.path.join('image_out', file_key)
+    #         s3_manager.upload_to_s3(local_path, file_key)  # <-- consumes exceptions
+    #         print_progress_bar(count + 1, num_files, prefix='Progress:', suffix='Complete', length=50)
+
+    # Copy files down from s3
     # todo: make function that takes a max amount and a 'randomize' boolean, filter to specific directory/theme
-    num_files: int = len(copy_s3_to_local)
-    theme_name_filter: str = "creative"  # empty string means do not filter by theme
-    max_to_copy: int = 50  # special value 0 means copy all the files
-    randomize: bool = True
 
-    if num_files> 0 and theme_name_filter and len(theme_name_filter) > 0:
-        filtered_list = [item for item in copy_s3_to_local if item["name"].startswith(theme_name_filter)]
-        num_files = len(filtered_list)
-        if 0 == num_files:
-            print(f"There are zero files in S3 for {theme_name_filter}")
-    else:
-        filtered_list = copy_s3_to_local
 
-    if num_files > 0:
-        num_copied = 0
-        if max_to_copy < 1:   # 0 means copy all files
-            max_to_copy = num_files
-        else:
-            max_to_copy = min(max_to_copy, num_files)
-        if randomize:
-            random.shuffle(filtered_list)
-        print(f"Copying {max_to_copy} files down from S3")
-        print_progress_bar(0, max_to_copy, prefix='Progress:', suffix='Complete', length=50)
-        for count, s3_file in enumerate(filtered_list):
-            file_key: str = s3_file['name']
-            # are we filtering by theme name? If so, skip any not in theme
-            local_path = os.path.join('image_out', file_key)
-            s3_manager.download_from_s3(file_key, local_path)
-            num_copied += 1
-            print_progress_bar(count + 1, max_to_copy, prefix='Progress:', suffix='Complete', length=50)
-            if num_copied >= max_to_copy:
-                break
+    copy_s3_files_to_local(copy_s3_to_local, s3_manager, theme_name_filter="creative", max_to_copy=2)
+
+    # num_files: int = len(copy_s3_to_local)
+    # theme_name_filter: str = "creative"  # empty string means do not filter by theme
+    # max_to_copy: int = 50  # special value 0 means copy all the files
+    # randomize: bool = True
+    #
+    # if num_files > 0 and theme_name_filter and len(theme_name_filter) > 0:
+    #     filtered_list = [item for item in copy_s3_to_local if item["name"].startswith(theme_name_filter)]
+    #     num_files = len(filtered_list)
+    #     if 0 == num_files:
+    #         print(f"There are zero files in S3 for {theme_name_filter}")
+    # else:
+    #     filtered_list = copy_s3_to_local
+    #
+    # if num_files > 0:
+    #     num_copied = 0
+    #     if max_to_copy < 1:  # 0 means copy all files
+    #         max_to_copy = num_files
+    #     else:
+    #         max_to_copy = min(max_to_copy, num_files)
+    #     if randomize:
+    #         random.shuffle(filtered_list)
+    #     print(f"Copying {max_to_copy} files down from S3")
+    #     print_progress_bar(0, max_to_copy, prefix='Progress:', suffix='Complete', length=50)
+    #     for count, s3_file in enumerate(filtered_list):
+    #         file_key: str = s3_file['name']
+    #         # are we filtering by theme name? If so, skip any not in theme
+    #         local_path = os.path.join('image_out', file_key)
+    #         s3_manager.download_from_s3(file_key, local_path)
+    #         num_copied += 1
+    #         print_progress_bar(count + 1, max_to_copy, prefix='Progress:', suffix='Complete', length=50)
+    #         if num_copied >= max_to_copy:
+    #             break
 
     # look for files approximately in both that might
     # need renaming (e.g. the s3 version has a rating and
