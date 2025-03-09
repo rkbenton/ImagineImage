@@ -58,7 +58,6 @@ class S3Manager(object):
                 Filename=local_file_path
             )
 
-            print(f"Successfully downloaded {s3_key} to {local_file_path}")
             print(f"✅ Downloaded {s3_key} to : {local_file_path}")
 
         except ClientError as e:
