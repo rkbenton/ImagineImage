@@ -1,15 +1,11 @@
-import json
+import logging
 import os
 import random
-import time
-from datetime import datetime
-from typing import List, Dict, Tuple
 import re
+from datetime import datetime
+from typing import List
 
 from S3Manager import S3Manager
-
-import logging
-
 from imim_utils import print_progress_bar
 
 logger = logging.getLogger(__name__)
@@ -33,6 +29,9 @@ def create_approximating_key(filename) -> str:
     """
     Given a filepath like 'halloween/20250218T160340_prompt.txt', this
     will return the minimally unique key of 'halloween/20250218T160340.txt'.
+    This key is guaranteed to match the filename itself no matter what comes
+    between the date and the extension--it is not an exact key, it is
+    approximate, but our naming convention ensures that it works.
     In the event of oddball keys, it will simply return them, e.g. 'christmas/'.
     """
     path, filename = os.path.split(filename)
@@ -41,56 +40,22 @@ def create_approximating_key(filename) -> str:
     return f"{path}/{date_time}{extension}"
 
 
-def match_files(s3_files, local_files, match_mode='exact'):
-    s3_set = set()
-    local_set = set()
-
-    for file in s3_files:
-        if match_mode == 'exact':
-            s3_set.add(file['name'])
-        elif match_mode == 'approximate':
-            path, filename = os.path.split(file['name'])
-            date_time = filename[:15]
-            extension = os.path.splitext(filename)[1]
-            s3_set.add(f"{path}/{date_time}{extension}")
-
-    for file in local_files:
-        if match_mode == 'exact':
-            local_set.add(file['name'])
-        elif match_mode == 'approximate':
-            path, filename = os.path.split(file['name'])
-            date_time = filename[:15]
-            extension = os.path.splitext(filename)[1]
-            local_set.add(f"{path}/{date_time}{extension}")
-
-    return s3_set, local_set
-
-
-def perform_set_operations(s3_files, local_files, match_mode='exact'):
-    s3_set, local_set = match_files(s3_files, local_files, match_mode)
-
-    files_in_both = s3_set.intersection(local_set)
-    files_only_local = local_set - s3_set
-    files_only_s3 = s3_set - local_set
-
-    return files_in_both, files_only_local, files_only_s3
-
-
-def find_naming_mismatches(files_in_both_exact, files_in_both_approx):
-    mismatches = files_in_both_approx - files_in_both_exact
-    return mismatches
-
-
 def enforce_str_len(key, length=40):
-    # Truncate the key if it's longer than the specified length
+    """
+    Truncate the key if it's longer than the specified length.
+    Used for clarity in logging.
+    """
     truncated_key = key[:length]
     # Pad the key with spaces to ensure it's exactly `length` characters
     padded_key = truncated_key.ljust(length)
     return padded_key
 
 
-def copy_s3_files_to_local(copy_s3_to_local: list, s3_manager: S3Manager, save_directory_path="image_out",
-                           max_to_copy=0, randomize=False,
+def copy_s3_files_to_local(copy_s3_to_local: list,
+                           s3_manager: S3Manager,
+                           save_directory_path="image_out",
+                           max_to_copy=0,
+                           randomize=False,
                            theme_name_filter="") -> None:
     """
     Copies files from an S3 bucket to a local directory.
@@ -99,13 +64,13 @@ def copy_s3_files_to_local(copy_s3_to_local: list, s3_manager: S3Manager, save_d
     :param s3_manager: utility for S3
     :param save_directory_path: root of where local images should go, default is "image_out"
     :param max_to_copy: Maximum number of files to copy (0 means copy all available files).
-    :param randomize: If True, randomizes the order of files before copying.
+    :param randomize: If True, randomizes the order of list of files before copying iteratively.
     :param theme_name_filter: If provided, filters files to only those starting with this theme name.
     """
     num_files = len(copy_s3_to_local)
 
     # Apply theme filter if specified
-    if num_files > 0 and theme_name_filter:
+    if num_files > 0 and theme_name_filter and len(theme_name_filter) > 0:
         filtered_list = [item for item in copy_s3_to_local if item["name"].startswith(theme_name_filter)]
         num_files = len(filtered_list)
     else:
@@ -170,7 +135,9 @@ def upload_local_files_to_s3(copy_local_to_s3, s3_manager: S3Manager) -> None:
             print_progress_bar(count + 1, num_files, prefix='Progress:', suffix='Complete', length=50)
 
 
-def synchronize_local_and_s3(s3_files: List[dict], local_files: List[dict], s3_manager: S3Manager):
+def synchronize_local_and_s3(s3_files: List[dict],
+                             local_files: List[dict],
+                             s3_manager: S3Manager):
     """
     From this we want to glean:
     - a list of files to rename in s3
@@ -217,7 +184,7 @@ def synchronize_local_and_s3(s3_files: List[dict], local_files: List[dict], s3_m
     print(f"    {enforce_str_len('set_of_approx_only_in_local')} contains {len(set_of_approx_only_in_local)} files")
     print(f"    {enforce_str_len('set_of_approx_in_both')} contains {len(set_of_approx_in_both)} files")
 
-    # copy files up and copy files down
+    # Copy files up and copy files down
     copy_local_to_s3 = []  # use set_of_approx_only_in_local
     copy_s3_to_local = []  # use set_of_approx_only_in_s3
 
@@ -226,64 +193,16 @@ def synchronize_local_and_s3(s3_files: List[dict], local_files: List[dict], s3_m
     for item in set_of_approx_only_in_s3:
         copy_s3_to_local.append(s3_dict[item])
 
+    # Copy local files up to S3
     upload_local_files_to_s3(copy_local_to_s3, s3_manager)
 
-    #
-    # # Copy up
-    # num_files = len(copy_local_to_s3)
-    # if num_files > 0:
-    #     print(f"Copying {num_files} local files up to S3")
-    #     print_progress_bar(0, num_files, prefix='Progress:', suffix='Complete', length=50)
-    #     for count, local_file in enumerate(copy_local_to_s3):
-    #         # validation...
-    #         file_key = local_file['name']
-    #         if len(file_key) < 17:
-    #             continue
-    #         key_pathing, key_filename = os.path.split(local_file['name'])
-    #         if len(key_filename) < 15 or key_filename.endswith('/') or len(key_pathing) < 2:
-    #             continue
-    #         local_path = os.path.join('image_out', file_key)
-    #         s3_manager.upload_to_s3(local_path, file_key)  # <-- consumes exceptions
-    #         print_progress_bar(count + 1, num_files, prefix='Progress:', suffix='Complete', length=50)
-
     # Copy files down from s3
-    # todo: make function that takes a max amount and a 'randomize' boolean, filter to specific directory/theme
-
-
-    copy_s3_files_to_local(copy_s3_to_local, s3_manager, theme_name_filter="creative", max_to_copy=2)
-
-    # num_files: int = len(copy_s3_to_local)
-    # theme_name_filter: str = "creative"  # empty string means do not filter by theme
-    # max_to_copy: int = 50  # special value 0 means copy all the files
-    # randomize: bool = True
-    #
-    # if num_files > 0 and theme_name_filter and len(theme_name_filter) > 0:
-    #     filtered_list = [item for item in copy_s3_to_local if item["name"].startswith(theme_name_filter)]
-    #     num_files = len(filtered_list)
-    #     if 0 == num_files:
-    #         print(f"There are zero files in S3 for {theme_name_filter}")
-    # else:
-    #     filtered_list = copy_s3_to_local
-    #
-    # if num_files > 0:
-    #     num_copied = 0
-    #     if max_to_copy < 1:  # 0 means copy all files
-    #         max_to_copy = num_files
-    #     else:
-    #         max_to_copy = min(max_to_copy, num_files)
-    #     if randomize:
-    #         random.shuffle(filtered_list)
-    #     print(f"Copying {max_to_copy} files down from S3")
-    #     print_progress_bar(0, max_to_copy, prefix='Progress:', suffix='Complete', length=50)
-    #     for count, s3_file in enumerate(filtered_list):
-    #         file_key: str = s3_file['name']
-    #         # are we filtering by theme name? If so, skip any not in theme
-    #         local_path = os.path.join('image_out', file_key)
-    #         s3_manager.download_from_s3(file_key, local_path)
-    #         num_copied += 1
-    #         print_progress_bar(count + 1, max_to_copy, prefix='Progress:', suffix='Complete', length=50)
-    #         if num_copied >= max_to_copy:
-    #             break
+    limit_to_theme_name=""  # empty is all, but "creative" only copies from that set of files
+    copy_s3_files_to_local(copy_s3_to_local,
+                           s3_manager,
+                           theme_name_filter=limit_to_theme_name,
+                           max_to_copy=2,
+                           randomize=True)
 
     # look for files approximately in both that might
     # need renaming (e.g. the s3 version has a rating and
@@ -317,54 +236,7 @@ def synchronize_local_and_s3(s3_files: List[dict], local_files: List[dict], s3_m
             print(f"\n\trenaming local: {item[0]['name']}\n\t  to s3's filename: {item[1]['name']}")
             os.rename(f"image_out/{item[0]['name']}", f"image_out/{item[1]['name']}")
 
-    # print("\ns3_approx_key_set:")
-    # for item in s3_approx_key_set:
-    #     print(f"    {enforce_str_len(item)}: {str(s3_dict[item])}")
-
-    # for item in set_of_approx_only_in_local:
-    #     the_tuple = (local_dict[item], s3_dict[item])
-    #     copy_local_to_s3.append({item: the_tuple})
-    #
-    # print("\ns3_approx_key_set:")
-    # for item in s3_approx_key_set:
-    #     print(f"    {enforce_str_len(item)}: {str(s3_dict[item])}")
-    #
-    #
-    # print("\ns3_approx_key_set:")
-    # for item in local_approx_key_set:
-    #     print(f"    {enforce_str_len(item)}: {str(local_dict[item])}")
-
     print("done")
-    # mismatch_details = []
-    # print(f"Iterating through the list of {len(mismatches)} mismatches")
-    # for mismatch in mismatches:
-    #     the_s3_match = s3_dict[mismatch]
-    #     if not the_s3_match:
-    #         print(f"mismatch key '{mismatch}' not found in s3_dict")
-    #         continue
-    #     the_local_match = local_dict[mismatch]
-    #     if not the_local_match:
-    #         print(f"mismatch key '{mismatch}' not found in the_local_match")
-    #         continue
-    #     print(f"mismatch key '{mismatch}':"
-    #           f"\n\ts3 name:    '{the_s3_match['name']}'"
-    #           f"\n\tlocal name: '{the_local_match['name']}'"
-    #           )
-
-    # s3_file = next((f for f in s3_files if
-    #                 f['name'].startswith(mismatch[:mismatch.rfind('.')]) and f['name'].endswith(
-    #                     mismatch[mismatch.rfind('.'):])), None)
-    # local_file = next((f for f in local_files if
-    #                    f['name'].startswith(mismatch[:mismatch.rfind('.')]) and f['name'].endswith(
-    #                        mismatch[mismatch.rfind('.'):])), None)
-
-    # if s3_file and local_file:
-    #     mismatch_details.append({
-    #         'approximate_match': mismatch,
-    #         's3_name': s3_file['name'],
-    #         'local_name': local_file['name']
-    #     })
-
 
 def print_mismatch_results(mismatch_details):
     print("\nFiles with naming mismatches (potential metadata differences):")
@@ -387,23 +259,13 @@ def print_results(files_in_both, files_only_local, files_only_s3, match_mode):
     print("  -", "\n  - ".join(files_only_s3))
 
 
-def save_results_to_file(files_in_both, files_only_local, files_only_s3, match_mode):
-    with open(f"results_{match_mode}.txt", "w") as f:
-        f.write(f"Results for {match_mode} matching:\n")
-        f.write(f"Files in both: {len(files_in_both)}\n")
-        f.write("  - " + "\n  - ".join(files_in_both) + "\n\n")
 
-        f.write(f"Files only local: {len(files_only_local)}\n")
-        f.write("  - " + "\n  - ".join(files_only_local) + "\n\n")
-
-        f.write(f"Files only in S3: {len(files_only_s3)}\n")
-        f.write("  - " + "\n  - ".join(files_only_s3))
 
 
 def cleanse_s3_dupes(s3_files, s3: S3Manager) -> bool:
     """
     Ideally, there should only be one file for an approximate key in s3,
-    but we have seen multiples. :/  For example:
+    but occasionally we have seen multiples. :/  For example:
     'creative/20250202T105414 output_image r[3.0].png'
     'creative/20250202T105414 prompt r[3.0].txt'
     'creative/20250202T105414 output_image.png'
@@ -468,25 +330,6 @@ def main():
     local_files = list_local_files('image_out')
 
     synchronize_local_and_s3(s3_files, local_files, s3_manager)
-
-    # # Perform exact matching
-    # files_in_both_exact, files_only_local_exact, files_only_s3_exact = perform_set_operations(s3_files, local_files,
-    #                                                                                           'exact')
-    # # Perform approximate matching
-    # files_in_both_approx, files_only_local_approx, files_only_s3_approx = perform_set_operations(s3_files, local_files,
-    #                                                                                              'approximate')
-    #
-    # # Find naming mismatches
-    #
-    # # Print results
-    # # print_results(files_in_both_exact, files_only_local_exact, files_only_s3_exact, 'exact')
-    # # print_results(files_in_both_approx, files_only_local_approx, files_only_s3_approx, 'approximate')
-    # print_mismatch_results(mismatch_details)
-    #
-    # # Save results to file
-    # save_results_to_file(files_in_both_exact, files_only_local_exact, files_only_s3_exact, 'exact')
-    # save_results_to_file(files_in_both_approx, files_only_local_approx, files_only_s3_approx, 'approximate')
-
 
 if __name__ == "__main__":
     main()
