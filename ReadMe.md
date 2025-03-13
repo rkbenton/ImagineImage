@@ -24,13 +24,9 @@ The image directory on disk is purged regularly so that only a maximum number of
 exist in the local output directory. This maximum is governed by the configuration file,
 i.e. `"max_num_saved_files": 200`.
 
-The Options dialog, triggered by hitting the `O` key, will allow you to modify values
-in the `app_config.json` file interactively. You may have to quit the app (`Q`) and
-start or let the app restart for some of the values to take effect. (See
-[Keyboard Commands](#keyboard-commands) for more shortcuts.)
-
 The project is [available on GitHub](https://github.com/rkbenton/ImagineImage)
 
+There is a companion control-panel web-app, called [ImagineApp](https://github.com/rkbenton/ImagineApp).
 
 # Keyboard Commands
 
