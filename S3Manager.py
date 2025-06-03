@@ -1,9 +1,7 @@
 import os
 
 import boto3
-import boto3
 from botocore.exceptions import ClientError
-import os
 
 
 class S3Manager(object):
