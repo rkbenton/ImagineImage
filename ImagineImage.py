@@ -244,6 +244,7 @@ class ImagineImage:
                 self.current_image = self.get_random_image_from_disk()
             else:
                 output_file_info = None
+                self.image_canvas.itemconfig(self.info_text_id, text="")
                 screen_xy = (self.tk_root.winfo_screenwidth(), self.tk_root.winfo_screenheight())
                 try:
                     output_file_info: [Path, Path] = self.image_generator.generate_image(
@@ -272,11 +273,14 @@ class ImagineImage:
 
     def enter_rating_mode(self):
         """Switch to rating mode: initialize RatingManager and display the first unrated image."""
+        self.image_canvas.itemconfig(self.info_text_id, text="")
         self.rating_mode = True
         # Initialize RatingManager with our S3 manager.
         self.rating_manager = RatingManager(self.s3_manager)
         # Assume images to rate are stored under: save_directory_path/<active_theme without .yaml>
+        self.config_mgr.load_config()
         theme_dir = self.config["active_theme"].replace(".yaml", "")
+        logger.info(f"Beginning to rate images from {theme_dir}")
         image_dir = str(Path(self.config["save_directory_path"]) / theme_dir)
         self.rating_manager.start_rating(image_dir)
         num_to_rate = self.rating_manager.num_remaining_to_rate()
