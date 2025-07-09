@@ -33,7 +33,7 @@ ls -lha ~/.ssh/id_rsa*
 If not:
 - Run `ssh-keygen -t rsa`
 - `ssh-keygen -t rsa -b 4096 -C "becky@beckybenton.com"`
-- passphrase: **do the thing**
+- passphrase: **redacted**
 
 you should get back something like:
 ```
