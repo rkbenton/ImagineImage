@@ -20,7 +20,7 @@ dev = ["pytest>=8.0"]
 pythonpath = ["."]
 
 [tool.uv]
-exclude-newer = "2026-06-05T00:00:00Z"
+exclude-newer = "1 week"
 
 [tool.bandit]
 skips = ["B311"]  # random used only for non-security selection (art styles, prompts, images)
