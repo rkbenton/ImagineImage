@@ -112,7 +112,7 @@ class S3Manager(object):
             # Attempt to get metadata to check if the object exists
             self.s3.head_object(Bucket=self.S3_BUCKET, Key=cur_key)
             return True
-        except self.s3.exceptions.ClientError as e:
+        except self.s3.exceptions.ClientError:
             return False
 
     def delete_file(self, cur_key: str) -> bool:

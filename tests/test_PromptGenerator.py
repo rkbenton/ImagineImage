@@ -30,7 +30,7 @@ def config_mgr():
     }
     # write the data and use it in creating a new ConfigMgr
     with config_file_path.open("w", encoding="utf-8") as file:
-        json.dump(config_data, file, indent=4)  # type: ignore
+        json.dump(config_data, file, indent=4)
     config_mgr = ConfigMgr(CONFIG_FILE_NAME)
 
     # go to town

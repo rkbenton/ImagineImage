@@ -3,9 +3,7 @@ import pytest
 from Theme import Theme
 import os
 
-import pytest
 
-from Theme import Theme
 from ThemeMgr import ThemeMgr
 
 TEST_THEME_DIR_REL_PATH = 'test_themes'

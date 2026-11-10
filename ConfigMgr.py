@@ -57,7 +57,7 @@ class ConfigMgr:
         # Write the config file if one does not exist
         if not self.config_file_path.exists():
             with self.config_file_path.open("w", encoding="utf-8") as file:
-                json.dump(default_config, file, indent=4)  # type: ignore
+                json.dump(default_config, file, indent=4)
                 print(f"New config file written to: {self.config_file_path}")
 
         # Read in the config_local.json file.
@@ -95,7 +95,7 @@ class ConfigMgr:
         This will remember when it was written.
         """
         with self.config_file_path.open("w", encoding="utf-8") as file:
-            json.dump(config, file, indent=4)  # type: ignore
+            json.dump(config, file, indent=4)
         self._config_cache = config
         self._last_read_time = self.config_file_path.stat().st_mtime
 
