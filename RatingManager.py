@@ -2,9 +2,19 @@ import os
 import re
 import random
 import enum
-import boto3
+from typing import Protocol
 
 from S3Manager import S3Manager
+
+
+class S3Backend(Protocol):
+    """The part of S3Manager that RatingManager uses; lets tests pass a stand-in."""
+
+    def is_in_s3(self, s3_prefix: str, filename: str) -> bool: ...
+
+    def change_name_in_cloud(self, s3_prefix: str, cur_filename: str, new_filename: str): ...
+
+    def upload_to_s3(self, file_path, s3_key: str) -> None: ...
 
 
 # ----------------------------
@@ -52,7 +62,7 @@ class SortEnum(enum.Enum):
 # RatingManager class
 # ----------------------------
 class RatingManager:
-    def __init__(self, s3_manager: S3Manager):
+    def __init__(self, s3_manager: S3Backend):
         self.s3_manager = s3_manager
         self.rating_list = []  # List of file paths (unrated files)
         self.current_index = 0
@@ -63,7 +73,7 @@ class RatingManager:
         Optionally, filter files to those whose rating is within rating_range.
         The returned list is sorted based on the sort parameter.
         """
-        rated_files = []
+        rated_files: list[tuple[float, str]] = []  # (rating, full path)
         rating_pattern = re.compile(r' r\[(\d\.\d)\]')
         for filename in os.listdir(dirpath):
             full_path = os.path.join(dirpath, filename)
@@ -72,17 +82,17 @@ class RatingManager:
                 if match:
                     rating_value = float(match.group(1))
                     if rating_range[0] <= rating_value <= rating_range[1]:
-                        rated_files.append(full_path)
+                        rated_files.append((rating_value, full_path))
 
         # Sorting as requested
         if sort == SortEnum.ASCENDING:
-            rated_files.sort(key=lambda fp: float(rating_pattern.search(os.path.basename(fp)).group(1)))
+            rated_files.sort(key=lambda rated: rated[0])
         elif sort == SortEnum.DESCENDING:
-            rated_files.sort(key=lambda fp: float(rating_pattern.search(os.path.basename(fp)).group(1)), reverse=True)
+            rated_files.sort(key=lambda rated: rated[0], reverse=True)
         elif sort == SortEnum.RANDOM:
             random.shuffle(rated_files)
         # If sort == SortEnum.NONE, leave unsorted
-        return rated_files
+        return [full_path for _, full_path in rated_files]
 
     def find_all_unrated_files(self, dirpath: str) -> list[str]:
         """

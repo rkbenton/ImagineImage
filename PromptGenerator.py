@@ -12,7 +12,7 @@ class PromptGenerator:
     FULL_PROMPT = 'full_prompt'
     SYSTEM_PROMPT = 'system_prompt'
 
-    def __init__(self, config_mgr: ConfigMgr, api_key: str = None) -> None:
+    def __init__(self, config_mgr: ConfigMgr, api_key: str | None = None) -> None:
         """
         Initializes the PromptGenerator with configuration and OpenAI API client.
         :param config_mgr: ConfigMgr instance
@@ -22,10 +22,7 @@ class PromptGenerator:
         self.config_mgr = config_mgr
         self.config = self.config_mgr.load_config()
         self.theme_mgr = ThemeMgr(self.config["themes_directory"])
-        if api_key:
-            self.client = OpenAI(api_key=api_key)
-        else:
-            self.client = None
+        self.client: OpenAI | None = OpenAI(api_key=api_key) if api_key else None
         self.most_recent_theme_used: str | None = None
 
     def get_theme_name(self) -> str | None:
@@ -48,6 +45,8 @@ class PromptGenerator:
             str: The AI-generated, embellished prompt.
         """
         try:
+            if self.client is None:
+                raise RuntimeError("no OpenAI client configured (no API key)")
 
             # Send the user and system prompts to the AI model for enhancement
             response = self.client.chat.completions.create(
@@ -60,13 +59,16 @@ class PromptGenerator:
             )
 
             # Extract and clean up the generated response from the AI
-            generated_prompt = response.choices[0].message.content.strip()
+            content = response.choices[0].message.content
+            if content is None:
+                raise ValueError("AI response had no content")
+            generated_prompt = content.strip()
 
         except Exception as e:
             # Handle errors gracefully by logging and falling back to a simpler prompt generator
             print(f"Failed to get prompt from AI: {e} will build one with SimplePromptGenerator")
             simple_generator = SimplePromptGenerator()
-            generated_prompt = simple_generator.create_image_prompt().get(PromptGenerator.FULL_PROMPT)
+            generated_prompt = simple_generator.create_image_prompt()[PromptGenerator.FULL_PROMPT]
 
         return generated_prompt  # Return the enhanced or fallback prompt
 

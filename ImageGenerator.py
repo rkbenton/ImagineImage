@@ -16,7 +16,7 @@ from openai import OpenAI
 from PromptGenerator import PromptGenerator
 
 class ImGenError(Exception):
-    def __init__(self, message: str="An Error Occurred", prompt: str=None):
+    def __init__(self, message: str="An Error Occurred", prompt: str | None=None):
         self.message = message
         self.prompt = prompt
         super().__init__(self.message)
@@ -34,7 +34,7 @@ class ImageGenerator:
         self.client = OpenAI(api_key=api_key)
         self.prompt_generator = prompt_generator
 
-    def get_image_from_service(self, prompt: str, port_xy: tuple[int, int]) -> Image:
+    def get_image_from_service(self, prompt: str, port_xy: tuple[int, int]) -> Image.Image:
         """
         Sends the prompt and fetches an image from OpenAI's DALL·E service.
 
@@ -55,13 +55,16 @@ class ImageGenerator:
             response = self.client.images.generate(
                 model="dall-e-3",  # Choose between "dall-e-3" or "dall-e-2"
                 prompt=prompt,
-                size=img_siz,  # type: ignore
+                size=img_siz,
                 quality="standard",  # Options: "hd", "standard"
                 n=1,
             )
-            image_url = response.data[0].url
         except Exception as e:
             raise  ImGenError(message="Error fetching image url", prompt=prompt) from e
+
+        image_url = response.data[0].url if response.data else None
+        if not image_url:
+            raise ImGenError(message="Error fetching image url", prompt=prompt)
 
         # Download and convert the image
         try:
@@ -73,7 +76,7 @@ class ImageGenerator:
         return img
 
     def generate_image(self, port_xy: tuple[int, int] = (1024, 1024),
-                       output_dir: str = "image_out") -> [Path, Path]:
+                       output_dir: str = "image_out") -> tuple[Path, Path]:
         """
         Generates an image and saves it to the specified directory.
 
@@ -92,7 +95,7 @@ class ImageGenerator:
             prompt_data[PromptGenerator.SYSTEM_PROMPT])
 
         # Fetch the generated image
-        img: Image = self.get_image_from_service(embellished_prompt, port_xy)
+        img: Image.Image = self.get_image_from_service(embellished_prompt, port_xy)
         if img is None:
             raise  ImGenError(message="Image generation failed")
 
