@@ -17,6 +17,10 @@ from PromptGenerator import PromptGenerator
 from RatingManager import RatingManager  # our previously defined rating manager
 from S3Manager import S3Manager
 
+# Module-level so the class works when imported; handlers and levels are
+# configured in the __main__ block below.
+logger = logging.getLogger(__name__)
+
 
 class ImagineImage:
     CONFIG_FILE = Path(ConfigMgr.LOCAL_CONFIG_FILE_NAME)
@@ -37,7 +41,7 @@ class ImagineImage:
 
         self.window_width = 0
         self.window_height = 0
-        self.window_position = 0
+        self.window_position: tuple[int, int] = (0, 0)
         self.set_window_default_size()
 
         self.tk_root.geometry(
@@ -102,15 +106,13 @@ class ImagineImage:
                 file.unlink()
                 logger.info(f"Deleted: {file}")
             except Exception as e:
-                logger.warn(f"Failed to delete {file}: {e}")
+                logger.warning(f"Failed to delete {file}: {e}")
 
     def on_canvas_configure(self, event):
         """
         Callback for when the canvas is resized.
-        Update the overlay rectangle and text width so that they span the width of the canvas.
+        Update the overlay text width so that it spans the width of the canvas.
         """
-        # Determine a suitable height for the overlay background (e.g., 30 pixels).
-        overlay_height = 30
         # Update the text item to have a width a little less than the full canvas width.
         self.image_canvas.itemconfig(self.info_text_id, width=event.width - 20)
 
@@ -168,13 +170,14 @@ class ImagineImage:
         b = int(hex_color[4:6], 16)
         return r, g, b
 
-    def display_image_tk(self, pil_img: Image.Image, bkgd_hex_color: str = "#000000") -> None:
+    def display_image_tk(self, pil_img: Image.Image | None, bkgd_hex_color: str = "#000000") -> None:
         """
         Resize the given PIL image to fit within the current window while preserving
         its aspect ratio, center it on a background of the given color, and update the canvas.
+        A None image (e.g. nothing could be loaded from disk) is logged and ignored.
         """
         if pil_img is None:
-            logger.warn("display_image_tk: Received None image")
+            logger.warning("display_image_tk: Received None image")
             return
 
         # Update idle tasks and get canvas dimensions.
@@ -243,22 +246,23 @@ class ImagineImage:
             if self.config["local_files_only"]:
                 self.current_image = self.get_random_image_from_disk()
             else:
-                output_file_info = None
                 self.image_canvas.itemconfig(self.info_text_id, text="")
                 screen_xy = (self.tk_root.winfo_screenwidth(), self.tk_root.winfo_screenheight())
                 try:
-                    output_file_info: [Path, Path] = self.image_generator.generate_image(
+                    output_file_info: tuple[Path, Path] = self.image_generator.generate_image(
                         screen_xy, self.config["save_directory_path"]
                     )
                     image_path: Path = output_file_info[0]
                     prompt_path: Path = output_file_info[1]
                     logger.info(f"New image from disk at {str(image_path)}")
                     if image_path is not None:
-                        theme_name = self.prompt_generator.get_theme_name().replace(".yaml", "")
-                        s3_key_img = f"{theme_name}/{os.path.basename(image_path)}"
+                        # No theme means the files were saved without a theme subdirectory
+                        theme_name = (self.prompt_generator.get_theme_name() or "").replace(".yaml", "")
+                        s3_prefix = f"{theme_name}/" if theme_name else ""
+                        s3_key_img = f"{s3_prefix}{os.path.basename(image_path)}"
                         logger.info(f"Saving image to S3 at {s3_key_img}")
                         self.s3_manager.upload_to_s3(image_path, s3_key_img)
-                        s3_key_prompt = f"{theme_name}/{os.path.basename(prompt_path)}"
+                        s3_key_prompt = f"{s3_prefix}{os.path.basename(prompt_path)}"
                         logger.info(f"Saving prompt to S3 at {s3_key_prompt}")
                         self.s3_manager.upload_to_s3(prompt_path, s3_key_prompt)
                         self.current_image = self.get_image_from_disk(image_path)
@@ -320,25 +324,28 @@ class ImagineImage:
         key = event.keysym.lower()
         logger.info(f"got key: '{key}'")
         if self.rating_mode:
+            rating_manager = self.rating_manager
+            if rating_manager is None:  # rating_mode implies a manager; guard anyway
+                return
             # In rating mode, process rating and navigation keys.
             if key in ['1', '2', '3', '4', '5']:
                 rating_value = float(key)
-                current_file = self.rating_manager.rating_list[self.rating_manager.current_index]
-                self.rating_manager.rate_file(current_file, rating_value)
+                current_file = rating_manager.rating_list[rating_manager.current_index]
+                rating_manager.rate_file(current_file, rating_value)
                 self.update_rating_display()
             elif key == "left":
                 try:
-                    self.rating_manager.prev()
+                    rating_manager.prev()
                     self.update_rating_display()
-                except Exception as e:
+                except Exception:
                     logger.info("Already at first image.")
                     self.image_canvas.itemconfig(self.info_text_id, text="Already at first image.")
 
             elif key == "right":
                 try:
-                    self.rating_manager.next()
+                    rating_manager.next()
                     self.update_rating_display()
-                except Exception as e:
+                except Exception:
                     logger.info("Already at last image. Hit X to exit rating mode.")
                     self.image_canvas.itemconfig(self.info_text_id, text="No more images.")
             elif key == 'x':
@@ -358,12 +365,12 @@ class ImagineImage:
     def update_info_text(self, msg: str):
         self.image_canvas.itemconfig(
             self.info_text_id,
-            text=f"{msg:str}"
+            text=msg
         )
 
     def toggle_fullscreen(self):
         if not self.is_fullscreen:
-            logger.info(f"Entering full screen mode.")
+            logger.info("Entering full screen mode.")
             # let windowing system update itself so we get proper window size
             self.tk_root.update_idletasks()
             # Save current window position and size before going fullscreen
@@ -382,7 +389,7 @@ class ImagineImage:
             # Update the info text to show current state
         else:
             # Exit fullscreen and restore previous dimensions
-            logger.info(f"Entering small screen mode.")
+            logger.info("Entering small screen mode.")
             self.tk_root.attributes("-fullscreen", False)
             self.is_fullscreen = False
 
@@ -434,8 +441,6 @@ if __name__ == '__main__':
         filemode=log_filemode,
         format="%(asctime)s:%(levelname)s:%(message)s"
     )
-    logger = logging.getLogger(__name__)
-
     console_handler = logging.StreamHandler()
     console_handler.setLevel(logging.INFO)
     console_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
